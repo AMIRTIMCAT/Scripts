@@ -1,6 +1,5 @@
--- Load Fluent Library
 local HttpService = game:GetService("HttpService")
-local Fluent = loadstring(HttpService:GetAsync("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
+loadstring(HttpService:GetAsync("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
 
 -- Catzik Hub Window Creation
 local Window = Fluent:CreateWindow({
