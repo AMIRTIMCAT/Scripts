@@ -1,98 +1,163 @@
-local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Создаём ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CustomMenu"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ResetOnSpawn = false
+-- ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomMenu"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
 
--- Основной Frame (окно меню)
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- Центр экрана
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Тёмный фон
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
+-- Main Menu Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 350)
+mainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+Instance.new("UICorner", mainFrame)
 
--- Закругление углов
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12) -- Радиус 12 пикселей
-UICorner.Parent = MainFrame
+local stroke = Instance.new("UIStroke", mainFrame)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Transparency = 0.4
 
--- Эффект тени с ImageLabel
-local Shadow = Instance.new("ImageLabel")
-Shadow.Size = UDim2.new(1, 20, 1, 20) -- Чуть больше Frame
-Shadow.Position = UDim2.new(0, -10, 0, -10)
-Shadow.BackgroundTransparency = 1
-Shadow.Image = "rbxassetid://1316045217" -- Стандартное размытие Roblox
-Shadow.ImageTransparency = 0.7
-Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-Shadow.ScaleType = Enum.ScaleType.Slice
-Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-Shadow.Parent = MainFrame
-Shadow.ZIndex = -1 -- Под фреймом
+-- Shadow (fake)
+local shadow = Instance.new("Frame")
+shadow.Size = mainFrame.Size + UDim2.new(0, 10, 0, 10)
+shadow.Position = mainFrame.Position + UDim2.new(0, 5, 0, 5)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.8
+shadow.ZIndex = 0
+shadow.Parent = screenGui
+Instance.new("UICorner", shadow)
 
--- Текстовая метка (заголовок)
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Position = UDim2.new(0, 0, 0, 10)
-Title.BackgroundTransparency = 1
-Title.Text = "Моё Меню"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 24
-Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
-
--- Кнопка примера
-local Button = Instance.new("TextButton")
-Button.Size = UDim2.new(0, 100, 0, 40)
-Button.Position = UDim2.new(0.5, -50, 0.5, 0)
-Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Button.Text = "Тест"
-Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-Button.TextSize = 18
-Button.Font = Enum.Font.Gotham
-Button.Parent = MainFrame
-
--- Закругление для кнопки
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 8)
-ButtonCorner.Parent = Button
-
--- Действие кнопки
-Button.MouseButton1Click:Connect(function()
-    print("Кнопка нажата!")
-    -- Добавь свой код здесь
+-- Sync shadow with frame
+mainFrame:GetPropertyChangedSignal("Position"):Connect(function()
+	shadow.Position = mainFrame.Position + UDim2.new(0, 5, 0, 5)
 end)
 
--- Кнопка закрытия
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -40, 0, 10)
-CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 18
-CloseButton.Font = Enum.Font.Gotham
-CloseButton.Parent = MainFrame
+-- Скрыть
+local hideButton = Instance.new("TextButton")
+hideButton.Text = "Скрыть"
+hideButton.Size = UDim2.new(0, 100, 0, 40)
+hideButton.Position = UDim2.new(0, 20, 1, -60)
+hideButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+hideButton.TextColor3 = Color3.new(1, 1, 1)
+hideButton.Parent = mainFrame
+Instance.new("UICorner", hideButton)
 
--- Закругление для кнопки закрытия
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
-CloseCorner.Parent = CloseButton
+-- Закрыть
+local closeButton = Instance.new("TextButton")
+closeButton.Text = "Закрыть"
+closeButton.Size = UDim2.new(0, 100, 0, 40)
+closeButton.Position = UDim2.new(1, -120, 1, -60)
+closeButton.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.Parent = mainFrame
+Instance.new("UICorner", closeButton)
 
--- Закрытие меню
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
+-- Открыть Меню
+local toggleButton = Instance.new("TextButton")
+toggleButton.Text = "Открыть Меню"
+toggleButton.Size = UDim2.new(0, 140, 0, 40)
+toggleButton.Position = UDim2.new(0, 20, 1, -60)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Visible = false
+toggleButton.Parent = screenGui
+Instance.new("UICorner", toggleButton)
+
+-- DropDown (ComboBox)
+local dropDown = Instance.new("TextButton")
+dropDown.Text = "Выбрать место ▼"
+dropDown.Size = UDim2.new(0, 200, 0, 40)
+dropDown.Position = UDim2.new(0.5, -100, 0, 20)
+dropDown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+dropDown.TextColor3 = Color3.new(1, 1, 1)
+dropDown.Parent = mainFrame
+Instance.new("UICorner", dropDown)
+
+-- Options
+local optionsFrame = Instance.new("Frame")
+optionsFrame.Size = UDim2.new(0, 200, 0, 0)
+optionsFrame.Position = UDim2.new(0.5, -100, 0, 60)
+optionsFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+optionsFrame.Visible = false
+optionsFrame.ClipsDescendants = true
+optionsFrame.Parent = mainFrame
+Instance.new("UICorner", optionsFrame)
+
+local options = {"Middle Town", "Jungle"}
+local selectedPlace = nil
+
+for i, option in ipairs(options) do
+	local btn = Instance.new("TextButton")
+	btn.Text = option
+	btn.Size = UDim2.new(1, 0, 0, 30)
+	btn.Position = UDim2.new(0, 0, 0, (i - 1) * 30)
+	btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Parent = optionsFrame
+	Instance.new("UICorner", btn)
+
+	btn.MouseButton1Click:Connect(function()
+		selectedPlace = option
+		dropDown.Text = option .. " ▼"
+		optionsFrame.Visible = false
+	end)
+end
+
+dropDown.MouseButton1Click:Connect(function()
+	optionsFrame.Visible = not optionsFrame.Visible
+	optionsFrame.Size = UDim2.new(0, 200, 0, optionsFrame.Visible and (#options * 30) or 0)
 end)
 
--- Toggle на Right Ctrl
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.RightControl then
-        ScreenGui.Enabled = not ScreenGui.Enabled -- Переключение видимости
-    end
+-- Кнопка "Телепортироваться"
+local tpButton = Instance.new("TextButton")
+tpButton.Text = "Телепортироваться"
+tpButton.Size = UDim2.new(0, 200, 0, 40)
+tpButton.Position = UDim2.new(0.5, -100, 0, 140)
+tpButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+tpButton.TextColor3 = Color3.new(1, 1, 1)
+tpButton.Parent = mainFrame
+Instance.new("UICorner", tpButton)
+
+-- Логика телепорта
+tpButton.MouseButton1Click:Connect(function()
+	if not selectedPlace then
+		warn("Место не выбрано!")
+		return
+	end
+
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+
+	if selectedPlace == "Middle Town" then
+		local cf = CFrame.new(-689.302979, 8.01199341, 1583.14294, 0.965929627, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, 0.965929627)
+		hrp.CFrame = cf
+	elseif selectedPlace == "Jungle" then
+		local cf = CFrame.new(-1425.30103, 7.3999939, 125.365005, -0.499959469, 0, 0.866048813, 0, 1, 0, -0.866048813, 0, -0.499959469)
+		hrp.CFrame = cf
+	end
+end)
+
+-- Кнопки Скрыть / Показать / Закрыть
+hideButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+	shadow.Visible = false
+	toggleButton.Visible = true
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = true
+	shadow.Visible = true
+	toggleButton.Visible = false
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
 end)
