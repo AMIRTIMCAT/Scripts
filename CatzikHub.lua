@@ -186,15 +186,15 @@ local function flyTo(destinationCFrame)
 end
 
 local function getCFrameForPlace(name)
-    local mapFolder = workspace:FindFirstChild("map")
+    local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then
-        warn("Папка 'map' не найдена в workspace!")
+        warn("Папка 'Map' не найдена в workspace!")
         return nil
     end
 
     local model = mapFolder:FindFirstChild(name)
     if not model then
-        warn("Модель '"..name.."' не найдена в 'map'!")
+        warn("Модель '"..name.."' не найдена в 'Map'!")
         return nil
     end
 
@@ -238,13 +238,3 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
     disableNoclip()
 end)
-
-print(workspace:FindFirstChild("map")) -- должен вернуть объект или nil
-if workspace:FindFirstChild("map") then
-    for _, model in ipairs(workspace.map:GetChildren()) do
-        print(model.Name)
-    end
-else
-    warn("Папка 'map' не найдена в workspace!")
-end
-
