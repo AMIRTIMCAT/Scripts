@@ -1,147 +1,244 @@
--- Catzik Hub for Blox Fruits
-local CatzikHub = {}
-CatzikHub.Settings = {
-    AutoFarm = true,
-    AutoStats = true,
-    FruitFinder = true,
-    RaidFarm = true,
-    Teleports = true,
-    EventFarm = {Sea = true, Volcano = true, Kitsune = true},
-    JoinTeam = "Pirates",
-    Translator = true
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+--// Services
+local UserInputService = game:GetService("UserInputService");
+
+--// Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/lxte/lates-lib/main/Main.lua"))()
+local Window = Library:CreateWindow({
+	Title = "???",
+	Theme = "Dark",
+	
+	Size = UDim2.fromOffset(570, 370),
+	Transparency = 0.2,
+	Blurring = true,
+	MinimizeKeybind = Enum.KeyCode.LeftAlt,
+})
+
+local Themes = {
+	Light = {
+		--// Frames:
+		Primary = Color3.fromRGB(232, 232, 232),
+		Secondary = Color3.fromRGB(255, 255, 255),
+		Component = Color3.fromRGB(245, 245, 245),
+		Interactables = Color3.fromRGB(235, 235, 235),
+
+		--// Text:
+		Tab = Color3.fromRGB(50, 50, 50),
+		Title = Color3.fromRGB(0, 0, 0),
+		Description = Color3.fromRGB(100, 100, 100),
+
+		--// Outlines:
+		Shadow = Color3.fromRGB(255, 255, 255),
+		Outline = Color3.fromRGB(210, 210, 210),
+
+		--// Image:
+		Icon = Color3.fromRGB(100, 100, 100),
+	},
+	
+	Dark = {
+		--// Frames:
+		Primary = Color3.fromRGB(30, 30, 30),
+		Secondary = Color3.fromRGB(35, 35, 35),
+		Component = Color3.fromRGB(40, 40, 40),
+		Interactables = Color3.fromRGB(45, 45, 45),
+
+		--// Text:
+		Tab = Color3.fromRGB(200, 200, 200),
+		Title = Color3.fromRGB(240,240,240),
+		Description = Color3.fromRGB(200,200,200),
+
+		--// Outlines:
+		Shadow = Color3.fromRGB(0, 0, 0),
+		Outline = Color3.fromRGB(40, 40, 40),
+
+		--// Image:
+		Icon = Color3.fromRGB(220, 220, 220),
+	},
+	
+	Void = {
+		--// Frames:
+		Primary = Color3.fromRGB(15, 15, 15),
+		Secondary = Color3.fromRGB(20, 20, 20),
+		Component = Color3.fromRGB(25, 25, 25),
+		Interactables = Color3.fromRGB(30, 30, 30),
+
+		--// Text:
+		Tab = Color3.fromRGB(200, 200, 200),
+		Title = Color3.fromRGB(240,240,240),
+		Description = Color3.fromRGB(200,200,200),
+
+		--// Outlines:
+		Shadow = Color3.fromRGB(0, 0, 0),
+		Outline = Color3.fromRGB(40, 40, 40),
+
+		--// Image:
+		Icon = Color3.fromRGB(220, 220, 220),
+	},
+
 }
 
--- UI Library (OrionLib mock for simplicity)
-local OrionLib = {Flags = {}}
-function OrionLib:MakeWindow(data)
-    local window = {Tabs = {}}
-    function window:AddTab(name) return {AddToggle = function(self, data) OrionLib.Flags[data.Flag] = data.Default or false end} end
-    return window
-end
+--// Set the default theme
+Window:SetTheme(Themes.Dark)
 
--- Main Hub Setup
-local Window = OrionLib:MakeWindow({Name = "Catzik Hub | Blox Fruits", HidePremium = true})
-local FarmTab = Window:AddTab("Auto Farm")
-local TeleportTab = Window:AddTab("Teleports")
-local MiscTab = Window:AddTab("Misc")
+--// Sections
+Window:AddTabSection({
+	Name = "Main",
+	Order = 1,
+})
 
--- Toggles
-FarmTab:AddToggle({Name = "Auto Farm Level", Default = true, Flag = "AutoFarmLevel"})
-FarmTab:AddToggle({Name = "Auto Farm Boss", Default = true, Flag = "AutoFarmBoss"})
-FarmTab:AddToggle({Name = "Auto Farm Raid", Default = true, Flag = "AutoFarmRaid"})
-MiscTab:AddToggle({Name = "Fruit Finder", Default = true, Flag = "FruitFinder"})
-TeleportTab:AddToggle({Name = "Teleport Enabled", Default = true, Flag = "TeleportEnabled"})
+Window:AddTabSection({
+	Name = "Settings",
+	Order = 2,
+})
 
--- Core Functions
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--// Tab [MAIN]
 
--- Team Join
-local function JoinTeam(team)
-    local args = {team}
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", unpack(args))
-end
-if CatzikHub.Settings.JoinTeam then
-    JoinTeam(CatzikHub.Settings.JoinTeam)
-end
+local Main = Window:AddTab({
+	Title = "Components",
+	Section = "Main",
+	Icon = "rbxassetid://11963373994"
+})
 
--- Auto Farm Level
-local function AutoFarmLevel()
-    if OrionLib.Flags.AutoFarmLevel then
-        local quest = Workspace.NPCs:FindFirstChild("QuestGiver")
-        if quest then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = quest.HumanoidRootPart.CFrame
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest")
-            for _, mob in pairs(Workspace.Enemies:GetChildren()) do
-                if mob:IsA("Model") and mob:FindFirstChild("Humanoid") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame
-                    game:GetService("VirtualUser"):Click()
-                end
-            end
-        end
-    end
-end
+Window:AddSection({ Name = "Non Interactable", Tab = Main }) 
 
--- Auto Farm Boss
-local function AutoFarmBoss()
-    if OrionLib.Flags.AutoFarmBoss then
-        for _, boss in pairs(Workspace.Enemies:GetChildren()) do
-            if boss.Name:match("Boss") and boss:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame
-                game:GetService("VirtualUser"):Click()
-            end
-        end
-    end
-end
 
--- Auto Farm Raid
-local function AutoFarmRaid()
-    if OrionLib.Flags.AutoFarmRaid then
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("Raid", "Start")
-        wait(2)
-        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(Workspace.Raid.Position)
-    end
-end
+Window:AddParagraph({
+	Title = "Paragraph",
+	Description = "Insert any important text here.",
+	Tab = Main
+}) 
 
--- Fruit Finder
-local function FruitFinder()
-    if OrionLib.Flags.FruitFinder then
-        for _, fruit in pairs(Workspace:GetChildren()) do
-            if fruit.Name:match("Fruit") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = fruit.CFrame
-                game:GetService("VirtualUser"):CaptureController()
-                wait(0.5)
-            end
-        end
-    end
-end
+Window:AddSection({ Name = "Interactable", Tab = Main }) 
 
--- Teleports
-local TeleportLocations = {
-    ["Spawn"] = CFrame.new(0, 50, 0),
-    ["Shop"] = CFrame.new(100, 50, 100),
-    ["BossArea"] = CFrame.new(200, 50, 200)
-}
-local function TeleportTo(location)
-    if OrionLib.Flags.TeleportEnabled then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = TeleportLocations[location]
-    end
-end
+Window:AddButton({
+	Title = "Button",
+	Description = "I wonder what this does",
+	Tab = Main,
+	Callback = function() 
+		Window:Notify({
+			Title = "hi",
+			Description = "i'm a notification", 
+			Duration = 5
+		})
+	end,
+}) 
 
--- Auto Stats
-local function AutoStats()
-    if CatzikHub.Settings.AutoStats then
-        local stats = {"Melee", "Defense", "Sword", "Fruit"}
-        for _, stat in pairs(stats) do
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", stat, 1)
-        end
-    end
-end
+Window:AddSlider({
+	Title = "Slider",
+	Description = "Sliding",
+	Tab = Main,
+	MaxValue = 100,
+	Callback = function(Amount) 
+		warn(Amount);
+	end,
+}) 
 
--- Event Farm
-local function EventFarm(event)
-    if CatzikHub.Settings.EventFarm[event] then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = Workspace[event].Position
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("Event", "Start")
-    end
-end
+Window:AddToggle({
+	Title = "Toggle",
+	Description = "Switching",
+	Tab = Main,
+	Callback = function(Boolean) 
+		warn(Boolean);
+	end,
+}) 
 
--- Main Loop
-while wait(0.1) do
-    if CatzikHub.Settings.AutoFarm then
-        AutoFarmLevel()
-        AutoFarmBoss()
-        AutoFarmRaid()
-    end
-    if CatzikHub.Settings.FruitFinder then
-        FruitFinder()
-    end
-    if CatzikHub.Settings.AutoStats then
-        AutoStats()
-    end
-    if CatzikHub.Settings.EventFarm.Sea then EventFarm("Sea") end
-    if CatzikHub.Settings.EventFarm.Volcano then EventFarm("Volcano") end
-    if CatzikHub.Settings.EventFarm.Kitsune then EventFarm("Kitsune") end
-end
+Window:AddInput({
+	Title = "Input",
+	Description = "Typing",
+	Tab = Main,
+	Callback = function(Text) 
+		warn(Text);
+	end,
+}) 
+
+
+Window:AddDropdown({
+	Title = "Dropdown",
+	Description = "Selecting",
+	Tab = Main,
+	Options = {
+		["An Option"] = "hi",
+		["And another"] = "hi",
+		["Another"] = "hi",
+	},
+	Callback = function(Number) 
+		warn(Number);
+	end,
+}) 
+
+Window:AddKeybind({
+	Title = "Keybind",
+	Description = "Binding",
+	Tab = Main,
+	Callback = function(Key) 
+		warn("Key Set")
+	end,
+}) 
+
+--// Tab [SETTINGS]
+local Keybind = nil
+local Settings = Window:AddTab({
+	Title = "Settings",
+	Section = "Settings",
+	Icon = "rbxassetid://11293977610",
+})
+
+Window:AddKeybind({
+	Title = "Minimize Keybind",
+	Description = "Set the keybind for Minimizing",
+	Tab = Settings,
+	Callback = function(Key) 
+		Window:SetSetting("Keybind", Key)
+	end,
+}) 
+
+Window:AddDropdown({
+	Title = "Set Theme",
+	Description = "Set the theme of the library!",
+	Tab = Settings,
+	Options = {
+		["Light Mode"] = "Light",
+		["Dark Mode"] = "Dark",
+		["Extra Dark"] = "Void",
+	},
+	Callback = function(Theme) 
+		Window:SetTheme(Themes[Theme])
+	end,
+}) 
+
+Window:AddToggle({
+	Title = "UI Blur",
+	Description = "If enabled, must have your Roblox graphics set to 8+ for it to work",
+	Default = true,
+	Tab = Settings,
+	Callback = function(Boolean) 
+		Window:SetSetting("Blur", Boolean)
+	end,
+}) 
+
+
+Window:AddSlider({
+	Title = "UI Transparency",
+	Description = "Set the transparency of the UI",
+	Tab = Settings,
+	AllowDecimals = true,
+	MaxValue = 1,
+	Callback = function(Amount) 
+		Window:SetSetting("Transparency", Amount)
+	end,
+}) 
+
+Window:Notify({
+	Title = "Hello World!",
+	Description = "Press Left Alt to Minimize and Open the tab!", 
+	Duration = 10
+})
+
+--// Keybind Example
+UserInputService.InputBegan:Connect(function(Key) 
+	if Key == Keybind then
+		warn("You have pressed the minimize keybind!");
+	end
+end)
