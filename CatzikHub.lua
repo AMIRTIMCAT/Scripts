@@ -1,148 +1,255 @@
+-- Executor-ready GUI + fly/tween script
+-- Работает через executor: player = game.Players:GetPlayers()[1]
+
 local player = game.Players:GetPlayers()[1]
+if not player then
+    warn("Player not found. Запусти скрипт в игровом сеансе.")
+    return
+end
+
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
--- GUIs
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-screenGui.Name = "ExecutorMenu"
+-- Create ScreenGui in player's PlayerGui
+local playerGui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ExecutorTeleportMenu"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
 
 -- Main Frame
-local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 400, 0, 300)
-mainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 420, 0, 360)
+mainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
 mainFrame.Active = true
 mainFrame.Draggable = true
-Instance.new("UICorner", mainFrame)
+mainFrame.Parent = screenGui
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0, 12)
 
 local stroke = Instance.new("UIStroke", mainFrame)
-stroke.Color = Color3.fromRGB(255, 255, 255)
-stroke.Thickness = 2
-stroke.Transparency = 0.5
+stroke.Thickness = 1.8
+stroke.Color = Color3.fromRGB(200, 200, 200)
+stroke.Transparency = 0.6
 
--- Shadow
-local shadow = Instance.new("Frame", screenGui)
-shadow.Size = mainFrame.Size + UDim2.new(0, 10, 0, 10)
-shadow.Position = mainFrame.Position + UDim2.new(0, 5, 0, 5)
+-- Shadow (fake)
+local shadow = Instance.new("Frame")
+shadow.Size = mainFrame.Size + UDim2.new(0, 12, 0, 12)
+shadow.Position = mainFrame.Position + UDim2.new(0, 6, 0, 6)
 shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-shadow.BackgroundTransparency = 0.8
+shadow.BackgroundTransparency = 0.82
 shadow.ZIndex = 0
+shadow.Parent = screenGui
 Instance.new("UICorner", shadow)
 
 mainFrame:GetPropertyChangedSignal("Position"):Connect(function()
-	shadow.Position = mainFrame.Position + UDim2.new(0, 5, 0, 5)
+    shadow.Position = mainFrame.Position + UDim2.new(0, 6, 0, 6)
 end)
 
--- ComboBox
-local dropdown = Instance.new("TextButton", mainFrame)
-dropdown.Size = UDim2.new(0, 200, 0, 40)
-dropdown.Position = UDim2.new(0.5, -100, 0, 20)
-dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-dropdown.TextColor3 = Color3.new(1,1,1)
-dropdown.Text = "Выбрать место ▼"
-Instance.new("UICorner", dropdown)
+-- Title
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(1, -20, 0, 36)
+title.Position = UDim2.new(0, 10, 0, 8)
+title.BackgroundTransparency = 1
+title.Text = "Teleport Menu"
+title.TextColor3 = Color3.fromRGB(230,230,230)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Dropdown (ComboBox)
+local dropDown = Instance.new("TextButton", mainFrame)
+dropDown.Size = UDim2.new(0, 260, 0, 40)
+dropDown.Position = UDim2.new(0, 20, 0, 60)
+dropDown.BackgroundColor3 = Color3.fromRGB(60,60,60)
+dropDown.TextColor3 = Color3.fromRGB(245,245,245)
+dropDown.Text = "Выбрать место ▼"
+dropDown.Font = Enum.Font.Gotham
+dropDown.TextSize = 16
+Instance.new("UICorner", dropDown)
 
 local optionsFrame = Instance.new("Frame", mainFrame)
-optionsFrame.Size = UDim2.new(0, 200, 0, 0)
-optionsFrame.Position = UDim2.new(0.5, -100, 0, 60)
-optionsFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+optionsFrame.Size = UDim2.new(0, 260, 0, 0)
+optionsFrame.Position = UDim2.new(0, 20, 0, 106)
+optionsFrame.BackgroundColor3 = Color3.fromRGB(45,45,45)
 optionsFrame.ClipsDescendants = true
 optionsFrame.Visible = false
 Instance.new("UICorner", optionsFrame)
 
-local selectedPlace = nil
+-- Buttons: TP, Hide, Close, Open
+local tpButton = Instance.new("TextButton", mainFrame)
+tpButton.Size = UDim2.new(0, 260, 0, 44)
+tpButton.Position = UDim2.new(0, 20, 0, 160)
+tpButton.BackgroundColor3 = Color3.fromRGB(80,120,255)
+tpButton.Text = "Телепортироваться"
+tpButton.TextColor3 = Color3.fromRGB(255,255,255)
+tpButton.Font = Enum.Font.GothamBold
+tpButton.TextSize = 18
+Instance.new("UICorner", tpButton)
+
+local hideButton = Instance.new("TextButton", mainFrame)
+hideButton.Size = UDim2.new(0, 90, 0, 36)
+hideButton.Position = UDim2.new(0, 20, 1, -56)
+hideButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
+hideButton.Text = "Скрыть"
+hideButton.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", hideButton)
+
+local closeButton = Instance.new("TextButton", mainFrame)
+closeButton.Size = UDim2.new(0, 90, 0, 36)
+closeButton.Position = UDim2.new(1, -110, 1, -56)
+closeButton.BackgroundColor3 = Color3.fromRGB(150,60,60)
+closeButton.Text = "Закрыть"
+closeButton.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", closeButton)
+
+local openButton = Instance.new("TextButton", screenGui)
+openButton.Size = UDim2.new(0, 140, 0, 40)
+openButton.Position = UDim2.new(0, 20, 1, -60)
+openButton.BackgroundColor3 = Color3.fromRGB(70,140,70)
+openButton.Text = "Открыть Меню"
+openButton.TextColor3 = Color3.fromRGB(255,255,255)
+openButton.Visible = false
+Instance.new("UICorner", openButton)
+
+-- Option list (add locations)
 local options = {"Middle Town", "Jungle", "Pirate Village"}
+local selectedPlace = nil
 
 for i, name in ipairs(options) do
-	local btn = Instance.new("TextButton", optionsFrame)
-	btn.Text = name
-	btn.Size = UDim2.new(1, 0, 0, 30)
-	btn.Position = UDim2.new(0, 0, 0, (i-1)*30)
-	btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	Instance.new("UICorner", btn)
+    local btn = Instance.new("TextButton", optionsFrame)
+    btn.Size = UDim2.new(1, 0, 0, 34)
+    btn.Position = UDim2.new(0, 0, 0, (i-1)*34)
+    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.TextColor3 = Color3.fromRGB(245,245,245)
+    btn.Text = name
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 16
+    Instance.new("UICorner", btn)
 
-	btn.MouseButton1Click:Connect(function()
-		selectedPlace = name
-		dropdown.Text = name .. " ▼"
-		optionsFrame.Visible = false
-	end)
+    btn.MouseButton1Click:Connect(function()
+        selectedPlace = name
+        dropDown.Text = name .. " ▼"
+        optionsFrame.Visible = false
+        optionsFrame.Size = UDim2.new(0, 260, 0, 0)
+    end)
 end
 
-dropdown.MouseButton1Click:Connect(function()
-	optionsFrame.Visible = not optionsFrame.Visible
-	optionsFrame.Size = UDim2.new(0, 200, 0, optionsFrame.Visible and #options * 30 or 0)
+dropDown.MouseButton1Click:Connect(function()
+    optionsFrame.Visible = not optionsFrame.Visible
+    optionsFrame.Size = UDim2.new(0, 260, 0, optionsFrame.Visible and (#options * 34) or 0)
 end)
 
--- Noclip
+-- Noclip utils
 local noclipConn
-local function enableNoclip(char)
-	noclipConn = RunService.Stepped:Connect(function()
-		for _, v in ipairs(char:GetDescendants()) do
-			if v:IsA("BasePart") then
-				v.CanCollide = false
-			end
-		end
-	end)
+local function enableNoclip(character)
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    noclipConn = RunService.Stepped:Connect(function()
+        if not character or not character.Parent then return end
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end)
 end
 
 local function disableNoclip()
-	if noclipConn then
-		noclipConn:Disconnect()
-		noclipConn = nil
-	end
+    if noclipConn then
+        noclipConn:Disconnect()
+        noclipConn = nil
+    end
 end
 
--- Полёт
+-- Fly / tween function (speed = 50 studs/sec, lift = 100)
 local function flyTo(destinationCFrame)
-	local char = player.Character
-	if not char then return end
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
+    local char = player.Character
+    if not char or not char.Parent then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-	enableNoclip(char)
+    enableNoclip(char)
 
-	-- Подъём на 100 y
-	hrp.CFrame = hrp.CFrame + Vector3.new(0, 100, 0)
+    -- Поднимаем на 100 y мгновенно (чтобы не застрять на земле)
+    hrp.CFrame = hrp.CFrame + Vector3.new(0, 100, 0)
 
-	local goalPos = destinationCFrame.Position + Vector3.new(0, 100, 0)
-	local dist = (hrp.Position - goalPos).Magnitude
-	local speed = 5
-	local time = dist / speed
+    -- Цель на 100 y (мы сначала летим над целью), затем опустимся в точку
+    local targetAbove = CFrame.new(destinationCFrame.Position + Vector3.new(0, 100, 0), destinationCFrame.Position)
 
-	local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
-	tween:Play()
+    local distance = (hrp.Position - targetAbove.Position).Magnitude
+    local speed = 50 -- studs per second (медленнее для избежать античита)
+    local duration = math.max(0.01, distance / speed)
 
-	tween.Completed:Connect(function()
-		disableNoclip()
-	end)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetAbove})
+    tween:Play()
+
+    tween.Completed:Connect(function()
+        -- Когда добрались над точкой, аккуратно устанавливаем точный CFrame (ориентацию тоже)
+        -- Сначала короткий tween вниз (опускание), чтобы движение выглядело естественнее
+        local downDuration = 0.2
+        local downTween = TweenService:Create(hrp, TweenInfo.new(downDuration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
+        downTween:Play()
+        downTween.Completed:Connect(function()
+            disableNoclip()
+        end)
+    end)
 end
 
--- Кнопка ТП
-local tpBtn = Instance.new("TextButton", mainFrame)
-tpBtn.Size = UDim2.new(0, 200, 0, 40)
-tpBtn.Position = UDim2.new(0.5, -100, 0, 140)
-tpBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-tpBtn.TextColor3 = Color3.new(1, 1, 1)
-tpBtn.Text = "Телепортироваться"
-Instance.new("UICorner", tpBtn)
-
-tpBtn.MouseButton1Click:Connect(function()
-	if not selectedPlace then return end
-
-	local cf
-	if selectedPlace == "Middle Town" then
-		cf = CFrame.new(-689.302979, 8.01199341, 1583.14294, 0.965929627, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, 0.965929627)
-	elseif selectedPlace == "Jungle" then
-		cf = CFrame.new(-1425.30103, 7.3999939, 125.365005, -0.499959469, 0, 0.866048813, 0, 1, 0, -0.866048813, 0, -0.499959469)
-	elseif selectedPlace == "Pirate Village" then
-		cf = CFrame.new(-1229.03503, -3.3999939, 3875.31689, -0.965929747, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, -0.965929747)
+-- Teleportation coords (CFrames)
+local function getCFrameForPlace(name)
+    if name == "Middle Town" then
+        return CFrame.new(-689.302979, 8.01199341, 1583.14294,
+            0.965929627, 0, 0.258804798,
+            0, 1, 0,
+            -0.258804798, 0, 0.965929627)
+    elseif name == "Jungle" then
+        return CFrame.new(-1425.30103, 7.3999939, 125.365005,
+            -0.499959469, 0, 0.866048813,
+            0, 1, 0,
+            -0.866048813, 0, -0.499959469)
+    elseif name == "Pirate Village" then
+        return CFrame.new(-1229.03503, -3.3999939, 3875.31689,
+            -0.965929747, 0, 0.258804798,
+            0, 1, 0,
+            -0.258804798, 0, -0.965929747)
+    end
+    return nil
 end
 
+-- TP Button action
+tpButton.MouseButton1Click:Connect(function()
+    if not selectedPlace then
+        warn("Место не выбрано!")
+        return
+    end
 
-	if cf then
-		flyTo(cf)
-	end
+    local cf = getCFrameForPlace(selectedPlace)
+    if not cf then
+        warn("Не найдена CFrame для " .. tostring(selectedPlace))
+        return
+    end
+
+    flyTo(cf)
+end)
+
+-- Hide / Close / Open logic
+hideButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    shadow.Visible = false
+    openButton.Visible = true
+end)
+
+openButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    shadow.Visible = true
+    openButton.Visible = false
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+    -- make sure we stop noclip if closing during flight
+    disableNoclip()
 end)
