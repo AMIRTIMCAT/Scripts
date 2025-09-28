@@ -1,40 +1,60 @@
--- LocalScript для условной загрузки main1.lua
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
+-- Загрузка библиотеки Eclipse 5 (замени URL на актуальный, если нужно)
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/UI"))()  -- Это пример; для Eclipse 5 используй: "https://pastebin.com/raw/XXXXX" или GitHub raw
 
--- Целевой Place ID
-local TARGET_PLACE_ID = 2753915549
+-- Создание окна
+local Window = Library:CreateWindow({
+    Title = "Моё Eclipse 5 Меню",
+    Center = true,
+    AutoShow = true,  -- Открыто по умолчанию
+    TabPadding = 8,
+    MenuFadeTime = 0.2,
+    Size = UDim2.fromOffset(500, 400),
+    MinSize = 400,
+    MaxSize = 600,
+    Acrylic = true,  -- Эффект акрила (полупрозрачность)
+    ThemedBackground = true,  -- Темная/светлая тема
+    MinimizeKey = Enum.KeyCode.RightControl,  -- Right Ctrl для toggle (скрыть/показать)
+    -- Закругления и тень встроены в Eclipse 5 (CornerRadius и Shadow по умолчанию)
+})
 
--- URL для raw содержимого main1.lua (прямой доступ к файлу на GitHub)
-local SCRIPT_URL = "https://raw.githubusercontent.com/AMIRTIMCAT/Scripts/main/main1.lua"
+-- Создание вкладки
+local MainTab = Window:AddTab({
+    Title = "Main",
+    Icon = "rbxassetid://4483345998",  -- Иконка (опционально)
+})
 
--- Проверка Place ID и загрузка скрипта
-if game.PlaceId == TARGET_PLACE_ID then
-    -- Включаем HTTP-запросы, если они отключены (требует прав в Studio или эксплойт)
-    if not game:GetService("HttpService").HttpEnabled then
-        game:GetService("HttpService").HttpEnabled = true
+-- Добавление секции с кнопкой (пример контента)
+local Section = MainTab:AddSection({
+    Title = "Тестовая секция"
+})
+
+MainTab:AddButton({
+    Title = "Test Button",
+    Description = "Нажми для теста",
+    Callback = function()
+        print("Кнопка нажата!")  -- Замени на свой код
+        -- Например, toggle другого GUI или что-то
     end
-    
-    -- Загружаем содержимое скрипта
-    local success, result = pcall(function()
-        return HttpService:GetAsync(SCRIPT_URL)
-    end)
-    
-    if success and result then
-        -- Выполняем загруженный скрипт
-        local load_success, err = pcall(function()
-            loadstring(result)()
-        end)
-        
-        if load_success then
-            print("main1.lua успешно загружен и выполнен для Place ID " .. TARGET_PLACE_ID)
+})
+
+-- Кнопка для закрытия/скрытия (опционально, но для явного закрытия)
+MainTab:AddButton({
+    Title = "Close Menu",
+    Description = "Закрыть меню",
+    Callback = function()
+        Library:Close()  -- Закрывает меню (Right Ctrl вернёт)
+    end
+})
+
+-- Автоматический toggle на Right Ctrl (если MinimizeKey не сработает, используй это)
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        if Window.Visible then
+            Window:Close()  -- Скрыть
         else
-            warn("Ошибка выполнения main1.lua: " .. tostring(err))
+            Window:Open()  -- Показать
         end
-    else
-        warn("Ошибка загрузки main1.lua: " .. tostring(result))
     end
-else
-    print("Place ID не совпадает (" .. game.PlaceId .. " != " .. TARGET_PLACE_ID .. "). Скрипт не запущен.")
-end
+end)
