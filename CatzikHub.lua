@@ -179,7 +179,7 @@ local function flyTo(destinationCFrame)
     local targetAbove = CFrame.new(destinationCFrame.Position + Vector3.new(0, 100, 0), destinationCFrame.Position)
 
     local distance = (hrp.Position - targetAbove.Position).Magnitude
-    local speed = 50 -- studs per second (медленнее для избежать античита)
+    local speed = 300 -- studs per second (медленнее для избежать античита)
     local duration = math.max(0.01, distance / speed)
 
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
