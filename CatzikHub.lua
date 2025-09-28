@@ -2,20 +2,6 @@ local player = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
-local codesList = {
-    ["LIGHTNINGABUSE"]=true, ["1LOSTADMIN"]=true, ["ADMINFIGHT"]=true, ["NOMOREHACK"]=true, ["BANEXPLOIT"]=true,
-    ["krazydares"]=true, ["TRIPLEABUSE"]=true, ["24NOADMIN"]=true, ["REWARDFUN"]=true, ["Chandler"]=true,
-    ["NEWTROLL"]=true, ["KITT_RESET"]=true, ["Sub2CaptainMaui"]=true, ["kittgaming"]=true, ["Sub2Fer999"]=true,
-    ["Enyu_is_Pro"]=true, ["Magicbus"]=true, ["JCWK"]=true, ["Starcodeheo"]=true, ["Bluxxy"]=true,
-    ["fudd10_v2"]=true, ["SUB2GAMERROBOT_EXP1"]=true, ["Sub2NoobMaster123"]=true, ["Sub2UncleKizaru"]=true,
-    ["Sub2Daigrock"]=true, ["Axiore"]=true, ["TantaiGaming"]=true, ["StrawHatMaine"]=true, ["Sub2OfficialNoobie"]=true,
-    ["Fudd10"]=true, ["Bignews"]=true, ["TheGreatAce"]=true, ["SECRET_ADMIN"]=true, ["SUB2GAMERROBOT_RESET1"]=true,
-    ["SUB2OFFICIALNOOBIE"]=true, ["AXIORE"]=true, ["BIGNEWS"]=true, ["BLUXXY"]=true, ["CHANDLER"]=true,
-    ["ENYU_IS_PRO"]=true, ["FUDD10"]=true, ["FUDD10_V2"]=true, ["KITTGAMING"]=true, ["MAGICBUS"]=true,
-    ["STARCODEHEO"]=true, ["STRAWHATMAINE"]=true, ["SUB2CAPTAINMAUI"]=true, ["SUB2DAIGROCK"]=true,
-    ["SUB2FER999"]=true, ["SUB2NOOBMASTER123"]=true, ["SUB2UNCLEKIZARU"]=true, ["TANTAIGAMING"]=true, ["THEGREATACE"]=true
-}
-
 -- Создаем ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CatzikHub"
@@ -69,12 +55,12 @@ tabsFrame.BackgroundTransparency = 1
 local tabButtons = {}
 local tabPages = {}
 
-local tabNames = {"Teleport", "AutoFarm", "Miscellaneous"}
+local tabNames = {"Teleport", "Player", "Miscellaneous"}
 
 local function createTab(name, index)
     local btn = Instance.new("TextButton", tabsFrame)
-    btn.Size = UDim2.new(0, 140, 1, 0)
-    btn.Position = UDim2.new(0, (index - 1) * 145, 0, 0)
+    btn.Size = UDim2.new(0, 120, 1, 0)
+    btn.Position = UDim2.new(0, (index - 1) * 125, 0, 0)
     btn.BackgroundColor3 = Color3.fromRGB(30, 40, 70)
     btn.Text = name
     btn.Font = Enum.Font.GothamBold
@@ -218,103 +204,97 @@ local function flyTo(destinationCFrame)
 
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetAbove})
-
     tween:Play()
-    tween.Completed:Wait()
 
-    -- Плавное опускание на цель
-    local finalTween = TweenService:Create(hrp, TweenInfo.new(1), {CFrame = destinationCFrame})
-    finalTween:Play()
-    finalTween.Completed:Wait()
+    tween.Completed:Connect(function()
+        local downDuration = 0.2
+        local downTween = TweenService:Create(hrp, TweenInfo.new(downDuration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
+        downTween:Play()
+        downTween.Completed:Connect(function()
+            disableNoclip()
+        end)
+    end)
+end
 
-    disableNoclip()
+local function getCFrameForPlace(name)
+    local mapFolder = workspace:FindFirstChild("Map")
+    if not mapFolder then
+        warn("Папка 'Map' не найдена в workspace!")
+        return nil
+    end
+
+    local model = mapFolder:FindFirstChild(name)
+    if not model then
+        warn("Модель '"..name.."' не найдена в 'Map'!")
+        return nil
+    end
+
+    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not hrp then
+        warn("В модели '"..name.."' нет HumanoidRootPart или BasePart!")
+        return nil
+    end
+
+    return hrp.CFrame
 end
 
 tpButton.MouseButton1Click:Connect(function()
     if not selectedPlace then
-        warn("Не выбрана локация для телепортации!")
+        warn("Место не выбрано!")
         return
     end
 
-    local map = workspace:FindFirstChild("Map")
-    if not map then
-        warn("Карта не найдена в workspace!")
+    local cf = getCFrameForPlace(selectedPlace)
+    if not cf then
+        warn("Не найдена точка для " .. selectedPlace)
         return
     end
 
-    local model = map:FindFirstChild(selectedPlace)
-    if not model then
-        warn("Локация "..selectedPlace.." не найдена!")
-        return
-    end
-
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then
-        warn("HumanoidRootPart не найден!")
-        return
-    end
-
-    flyTo(model.PrimaryPart.CFrame)
+    flyTo(cf)
 end)
 
--- --- Контент вкладки Miscellaneous ---
+-- Кнопки скрытия и закрытия
 
-local miscPage = tabPages["Miscellaneous"]
-
-local labelCodes = Instance.new("TextLabel", miscPage)
-labelCodes.Size = UDim2.new(0, 400, 0, 30)
-labelCodes.Position = UDim2.new(0, 20, 0, 20)
-labelCodes.BackgroundTransparency = 1
-labelCodes.Text = "Введите код для redeem:"
-labelCodes.TextColor3 = Color3.fromRGB(200, 220, 255)
-labelCodes.Font = Enum.Font.GothamBold
-labelCodes.TextSize = 18
-labelCodes.TextXAlignment = Enum.TextXAlignment.Left
-
-local codeInput = Instance.new("TextBox", miscPage)
-codeInput.Size = UDim2.new(0, 260, 0, 40)
-codeInput.Position = UDim2.new(0, 20, 0, 60)
-codeInput.BackgroundColor3 = Color3.fromRGB(35, 45, 70)
-codeInput.TextColor3 = Color3.fromRGB(220, 220, 255)
-codeInput.Font = Enum.Font.Gotham
-codeInput.TextSize = 18
-codeInput.PlaceholderText = "Введите код здесь"
-Instance.new("UICorner", codeInput)
-codeInput.ClearTextOnFocus = false
-
-local redeemButton = Instance.new("TextButton", miscPage)
-redeemButton.Size = UDim2.new(0, 260, 0, 40)
-redeemButton.Position = UDim2.new(0, 20, 0, 110)
-redeemButton.BackgroundColor3 = Color3.fromRGB(70, 110, 210)
-redeemButton.Text = "Redeem"
-redeemButton.TextColor3 = Color3.fromRGB(230, 230, 255)
-redeemButton.Font = Enum.Font.GothamBold
-redeemButton.TextSize = 20
-Instance.new("UICorner", redeemButton)
-
-redeemButton.MouseButton1Click:Connect(function()
-    local enteredCode = codeInput.Text:upper():gsub("%s+", "")
-    if codesList[enteredCode] then
-        print("Код успешно активирован:", enteredCode)
-        -- Тут можно добавить любую логику применения кода
-    else
-        print("Код не найден или недействителен:", enteredCode)
-    end
-end)
-
--- --- Закрыть кнопку ---
+local hideButton = Instance.new("TextButton", mainFrame)
+hideButton.Size = UDim2.new(0, 90, 0, 36)
+hideButton.Position = UDim2.new(0, 20, 1, -56)
+hideButton.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+hideButton.Text = "Скрыть"
+hideButton.TextColor3 = Color3.fromRGB(200, 200, 255)
+Instance.new("UICorner", hideButton)
+hideButton.ZIndex = 10
 
 local closeButton = Instance.new("TextButton", mainFrame)
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -40, 0, 5)
-closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-closeButton.Text = "X"
-closeButton.Font = Enum.Font.GothamBold
+closeButton.Size = UDim2.new(0, 90, 0, 36)
+closeButton.Position = UDim2.new(1, -110, 1, -56)
+closeButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+closeButton.Text = "Закрыть"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 18
-closeButton.AutoButtonColor = true
 Instance.new("UICorner", closeButton)
+closeButton.ZIndex = 10
+
+local openButton = Instance.new("TextButton", screenGui)
+openButton.Size = UDim2.new(0, 140, 0, 40)
+openButton.Position = UDim2.new(0, 20, 1, -60)
+openButton.BackgroundColor3 = Color3.fromRGB(40, 150, 100)
+openButton.Text = "Открыть Меню"
+openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+openButton.Visible = false
+Instance.new("UICorner", openButton)
+openButton.ZIndex = 12
+
+hideButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    shadow.Visible = false
+    openButton.Visible = true
+end)
 
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+end)
+
+openButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    shadow.Visible = true
+    openButton.Visible = false
 end)
