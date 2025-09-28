@@ -197,4 +197,12 @@ hideButton.MouseButton1Click:Connect(function()
 	toggleButton.Visible = true
 end)
 
-toggleButton.MouseButton1
+toggleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = true
+	shadow.Visible = true
+	toggleButton.Visible = false
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
