@@ -151,7 +151,7 @@ local function flyTo(destinationCFrame)
 	-- Цель с 100 y
 	local goal = destinationCFrame.Position + Vector3.new(0, 100, 0)
 	local distance = (hrp.Position - goal).Magnitude
-	local speed = 1000 -- studs per second
+	local speed = 5000 -- studs per second
 	local duration = distance / speed
 
 	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
