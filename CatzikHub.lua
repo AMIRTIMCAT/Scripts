@@ -1,4 +1,3 @@
-```lua
 -- Load Fluent Library
 local HttpService = game:GetService("HttpService")
 local Fluent = loadstring(HttpService:GetAsync("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
@@ -13,7 +12,6 @@ local Window = Fluent:CreateWindow({
 })
 
 -- [Rest of the script remains the same as previous version]
-```
 
 -- Main Tabs
 local FarmTab = Window:AddTab({Title = "Auto Farm", Image = "rbxassetid://0"})
