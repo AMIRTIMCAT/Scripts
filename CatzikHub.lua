@@ -53,7 +53,7 @@ optionsFrame.Visible = false
 Instance.new("UICorner", optionsFrame)
 
 local selectedPlace = nil
-local options = {"Middle Town", "Jungle"}
+local options = {"Middle Town", "Jungle", "Pirate Village"}
 
 for i, name in ipairs(options) do
 	local btn = Instance.new("TextButton", optionsFrame)
@@ -137,7 +137,10 @@ tpBtn.MouseButton1Click:Connect(function()
 		cf = CFrame.new(-689.302979, 8.01199341, 1583.14294, 0.965929627, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, 0.965929627)
 	elseif selectedPlace == "Jungle" then
 		cf = CFrame.new(-1425.30103, 7.3999939, 125.365005, -0.499959469, 0, 0.866048813, 0, 1, 0, -0.866048813, 0, -0.499959469)
-	end
+	elseif selectedPlace == "Pirate Village" then
+		cf = CFrame.new(-1229.03503, -3.3999939, 3875.31689, -0.965929747, 0, 0.258804798, 0, 1, 0, -0.258804798, 0, -0.965929747)
+end
+
 
 	if cf then
 		flyTo(cf)
