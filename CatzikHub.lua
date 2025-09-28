@@ -1,52 +1,98 @@
--- Загрузка библиотеки DrRay UI (проверенный URL на 2025 год, работает без 404)
-local success, Library = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
-end)
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-if not success then
-    warn("Ошибка загрузки библиотеки: " .. tostring(Library) .. ". Используй локальный скрипт без ссылок!")
-    return -- Остановка, если не загрузилось
-end
+-- Создаём ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CustomMenu"
+ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
 
--- Создание окна
-local Window = Library:CreateWindow("Моё Меню", "Roblox Hub") -- Заголовок
+-- Основной Frame (окно меню)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- Центр экрана
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Тёмный фон
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
--- Вкладка
-local MainTab = Window:AddTab("Main")
+-- Закругление углов
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12) -- Радиус 12 пикселей
+UICorner.Parent = MainFrame
 
--- Секция
-local Section = MainTab:AddSection("Тестовая секция")
+-- Эффект тени с ImageLabel
+local Shadow = Instance.new("ImageLabel")
+Shadow.Size = UDim2.new(1, 20, 1, 20) -- Чуть больше Frame
+Shadow.Position = UDim2.new(0, -10, 0, -10)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://1316045217" -- Стандартное размытие Roblox
+Shadow.ImageTransparency = 0.7
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+Shadow.Parent = MainFrame
+Shadow.ZIndex = -1 -- Под фреймом
+
+-- Текстовая метка (заголовок)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Position = UDim2.new(0, 0, 0, 10)
+Title.BackgroundTransparency = 1
+Title.Text = "Моё Меню"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 24
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
 
 -- Кнопка примера
-MainTab:AddButton({
-    Text = "Test Button",
-    Callback = function()
-        print("Кнопка нажата! Добавь свой код.")
-    end
-})
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(0, 100, 0, 40)
+Button.Position = UDim2.new(0.5, -50, 0.5, 0)
+Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Button.Text = "Тест"
+Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button.TextSize = 18
+Button.Font = Enum.Font.Gotham
+Button.Parent = MainFrame
+
+-- Закругление для кнопки
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 8)
+ButtonCorner.Parent = Button
+
+-- Действие кнопки
+Button.MouseButton1Click:Connect(function()
+    print("Кнопка нажата!")
+    -- Добавь свой код здесь
+end)
 
 -- Кнопка закрытия
-MainTab:AddButton({
-    Text = "Close Menu",
-    Callback = function()
-        Library:Close() -- Закрывает меню
-    end
-})
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -40, 0, 10)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.Font = Enum.Font.Gotham
+CloseButton.Parent = MainFrame
 
--- Toggle на Right Ctrl (встроенный + ручной для надёжности)
-Library:SetKeybind(Enum.KeyCode.RightControl) -- Встроенный toggle
+-- Закругление для кнопки закрытия
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
 
-local UserInputService = game:GetService("UserInputService")
+-- Закрытие меню
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui.Enabled = false
+end)
+
+-- Toggle на Right Ctrl
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightControl then
-        if Library:IsVisible() then
-            Library:Close()
-        else
-            Library:Open()
-        end
+        ScreenGui.Enabled = not ScreenGui.Enabled -- Переключение видимости
     end
 end)
-
--- Автооткрытие
-Library:SelectTab(1) -- Первая вкладка
