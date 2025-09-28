@@ -145,13 +145,13 @@ local function flyTo(destinationCFrame)
 	enableNoclip(character)
 
 	-- Поднимаем вверх на 100 юнитов
-	local liftCF = hrp.CFrame + Vector3.new(0, 80, 0)
+	local liftCF = hrp.CFrame + Vector3.new(0, 100, 0)
 	hrp.CFrame = liftCF
 
 	-- Цель с 100 y
 	local goal = destinationCFrame.Position + Vector3.new(0, 100, 0)
 	local distance = (hrp.Position - goal).Magnitude
-	local speed = 350 -- studs per second
+	local speed = 1000 -- studs per second
 	local duration = distance / speed
 
 	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
