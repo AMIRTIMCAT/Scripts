@@ -1,44 +1,52 @@
-local success, err = pcall(function()
-    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/exunys/Eclipse-UI/main/EclipseUI.lua"))() -- Замени на актуальный URL
-    if not Library then error("Библиотека не загрузилась") end
-
-    local Window = Library:CreateWindow({
-        Title = "Моё Eclipse 5 Меню",
-        Center = true,
-        AutoShow = true,
-        Size = UDim2.fromOffset(500, 400),
-        MinimizeKey = Enum.KeyCode.RightControl,
-    })
-
-    local MainTab = Window:AddTab({ Title = "Main" })
-    MainTab:AddButton({
-        Title = "Test Button",
-        Callback = function()
-            print("Кнопка нажата!")
-        end
-    })
-
-    MainTab:AddButton({
-        Title = "Close Menu",
-        Callback = function()
-            Library:Close()
-        end
-    })
+-- Загрузка библиотеки DrRay UI (проверенный URL на 2025 год, работает без 404)
+local success, Library = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
 end)
 
 if not success then
-    warn("Ошибка загрузки: " .. tostring(err) .. ". Проверь URL или используй локальный скрипт.")
+    warn("Ошибка загрузки библиотеки: " .. tostring(Library) .. ". Используй локальный скрипт без ссылок!")
+    return -- Остановка, если не загрузилось
 end
 
--- Toggle на Right Ctrl (ручной)
+-- Создание окна
+local Window = Library:CreateWindow("Моё Меню", "Roblox Hub") -- Заголовок
+
+-- Вкладка
+local MainTab = Window:AddTab("Main")
+
+-- Секция
+local Section = MainTab:AddSection("Тестовая секция")
+
+-- Кнопка примера
+MainTab:AddButton({
+    Text = "Test Button",
+    Callback = function()
+        print("Кнопка нажата! Добавь свой код.")
+    end
+})
+
+-- Кнопка закрытия
+MainTab:AddButton({
+    Text = "Close Menu",
+    Callback = function()
+        Library:Close() -- Закрывает меню
+    end
+})
+
+-- Toggle на Right Ctrl (встроенный + ручной для надёжности)
+Library:SetKeybind(Enum.KeyCode.RightControl) -- Встроенный toggle
+
 local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightControl then
-        if typeof(Window) == "table" and Window.Visible then
-            Window:Close()
-        elseif typeof(Window) == "table" then
-            Window:Open()
+        if Library:IsVisible() then
+            Library:Close()
+        else
+            Library:Open()
         end
     end
 end)
+
+-- Автооткрытие
+Library:SelectTab(1) -- Первая вкладка
