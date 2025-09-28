@@ -1,16 +1,12 @@
--- Executor-ready GUI + fly/tween script
--- Работает через executor: player = game.Players:GetPlayers()[1]
-
 local player = game.Players:GetPlayers()[1]
 if not player then
-    warn("Player not found. Запусти скрипт в игровом сеансе.")
+    warn("Player not found.")
     return
 end
 
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
--- Create ScreenGui in player's PlayerGui
 local playerGui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ExecutorTeleportMenu"
@@ -18,7 +14,6 @@ screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 360)
 mainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
@@ -34,7 +29,6 @@ stroke.Thickness = 1.8
 stroke.Color = Color3.fromRGB(200, 200, 200)
 stroke.Transparency = 0.6
 
--- Shadow (fake)
 local shadow = Instance.new("Frame")
 shadow.Size = mainFrame.Size + UDim2.new(0, 12, 0, 12)
 shadow.Position = mainFrame.Position + UDim2.new(0, 6, 0, 6)
@@ -48,7 +42,6 @@ mainFrame:GetPropertyChangedSignal("Position"):Connect(function()
     shadow.Position = mainFrame.Position + UDim2.new(0, 6, 0, 6)
 end)
 
--- Title
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1, -20, 0, 36)
 title.Position = UDim2.new(0, 10, 0, 8)
@@ -59,7 +52,6 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Dropdown (ComboBox)
 local dropDown = Instance.new("TextButton", mainFrame)
 dropDown.Size = UDim2.new(0, 260, 0, 40)
 dropDown.Position = UDim2.new(0, 20, 0, 60)
@@ -78,7 +70,6 @@ optionsFrame.ClipsDescendants = true
 optionsFrame.Visible = false
 Instance.new("UICorner", optionsFrame)
 
--- Buttons: TP, Hide, Close, Open
 local tpButton = Instance.new("TextButton", mainFrame)
 tpButton.Size = UDim2.new(0, 260, 0, 44)
 tpButton.Position = UDim2.new(0, 20, 0, 160)
@@ -114,8 +105,10 @@ openButton.TextColor3 = Color3.fromRGB(255,255,255)
 openButton.Visible = false
 Instance.new("UICorner", openButton)
 
--- Option list (add locations)
-local options = {"Middle Town", "Jungle", "Pirate Village"}
+local options = {
+    "Colosseum", "Desert", "Fountain", "Jungle", "Magma",
+    "MarineStart", "Pirate", "Prison", "Sky", "SkyArea1", "SkyArea2"
+}
 local selectedPlace = nil
 
 for i, name in ipairs(options) do
@@ -142,7 +135,6 @@ dropDown.MouseButton1Click:Connect(function()
     optionsFrame.Size = UDim2.new(0, 260, 0, optionsFrame.Visible and (#options * 34) or 0)
 end)
 
--- Noclip utils
 local noclipConn
 local function enableNoclip(character)
     if noclipConn then noclipConn:Disconnect() noclipConn = nil end
@@ -163,7 +155,6 @@ local function disableNoclip()
     end
 end
 
--- Fly / tween function (speed = 50 studs/sec, lift = 100)
 local function flyTo(destinationCFrame)
     local char = player.Character
     if not char or not char.Parent then return end
@@ -172,14 +163,12 @@ local function flyTo(destinationCFrame)
 
     enableNoclip(char)
 
-    -- Поднимаем на 100 y мгновенно (чтобы не застрять на земле)
     hrp.CFrame = hrp.CFrame + Vector3.new(0, 100, 0)
 
-    -- Цель на 100 y (мы сначала летим над целью), затем опустимся в точку
     local targetAbove = CFrame.new(destinationCFrame.Position + Vector3.new(0, 100, 0), destinationCFrame.Position)
 
     local distance = (hrp.Position - targetAbove.Position).Magnitude
-    local speed = 300 -- studs per second (медленнее для избежать античита)
+    local speed = 300 -- studs/sec
     local duration = math.max(0.01, distance / speed)
 
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
@@ -187,8 +176,6 @@ local function flyTo(destinationCFrame)
     tween:Play()
 
     tween.Completed:Connect(function()
-        -- Когда добрались над точкой, аккуратно устанавливаем точный CFrame (ориентацию тоже)
-        -- Сначала короткий tween вниз (опускание), чтобы движение выглядело естественнее
         local downDuration = 0.2
         local downTween = TweenService:Create(hrp, TweenInfo.new(downDuration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
         downTween:Play()
@@ -198,28 +185,28 @@ local function flyTo(destinationCFrame)
     end)
 end
 
--- Teleportation coords (CFrames)
 local function getCFrameForPlace(name)
-    if name == "Middle Town" then
-        return CFrame.new(-689.302979, 8.01199341, 1583.14294,
-            0.965929627, 0, 0.258804798,
-            0, 1, 0,
-            -0.258804798, 0, 0.965929627)
-    elseif name == "Jungle" then
-        return CFrame.new(-1425.30103, 7.3999939, 125.365005,
-            -0.499959469, 0, 0.866048813,
-            0, 1, 0,
-            -0.866048813, 0, -0.499959469)
-    elseif name == "Pirate Village" then
-        return CFrame.new(-1229.03503, -3.3999939, 3875.31689,
-            -0.965929747, 0, 0.258804798,
-            0, 1, 0,
-            -0.258804798, 0, -0.965929747)
+    local mapFolder = workspace:FindFirstChild("map")
+    if not mapFolder then
+        warn("Папка 'map' не найдена в workspace!")
+        return nil
     end
-    return nil
+
+    local model = mapFolder:FindFirstChild(name)
+    if not model then
+        warn("Модель '"..name.."' не найдена в 'map'!")
+        return nil
+    end
+
+    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    if not hrp then
+        warn("В модели '"..name.."' нет HumanoidRootPart или BasePart!")
+        return nil
+    end
+
+    return hrp.CFrame
 end
 
--- TP Button action
 tpButton.MouseButton1Click:Connect(function()
     if not selectedPlace then
         warn("Место не выбрано!")
@@ -228,14 +215,13 @@ tpButton.MouseButton1Click:Connect(function()
 
     local cf = getCFrameForPlace(selectedPlace)
     if not cf then
-        warn("Не найдена CFrame для " .. tostring(selectedPlace))
+        warn("Не найдена точка для " .. selectedPlace)
         return
     end
 
     flyTo(cf)
 end)
 
--- Hide / Close / Open logic
 hideButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     shadow.Visible = false
@@ -250,6 +236,5 @@ end)
 
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
-    -- make sure we stop noclip if closing during flight
     disableNoclip()
 end)
