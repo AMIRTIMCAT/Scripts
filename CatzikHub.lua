@@ -114,17 +114,7 @@ dropDown.MouseButton1Click:Connect(function()
 	optionsFrame.Size = UDim2.new(0, 200, 0, optionsFrame.Visible and (#options * 30) or 0)
 end)
 
--- Кнопка Телепорта
-local tpButton = Instance.new("TextButton")
-tpButton.Text = "Телепортироваться"
-tpButton.Size = UDim2.new(0, 200, 0, 40)
-tpButton.Position = UDim2.new(0.5, -100, 0, 140)
-tpButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-tpButton.TextColor3 = Color3.new(1, 1, 1)
-tpButton.Parent = mainFrame
-Instance.new("UICorner", tpButton)
-
--- Ноклип функции
+-- Noclip functions
 local noclipConnection
 local function enableNoclip(character)
 	local function onStepped()
@@ -144,7 +134,7 @@ local function disableNoclip()
 	end
 end
 
--- Tween to Position
+-- Tween flying function
 local function flyTo(destinationCFrame)
 	local character = player.Character
 	if not character then return end
@@ -154,14 +144,15 @@ local function flyTo(destinationCFrame)
 
 	enableNoclip(character)
 
-	-- Поднимаем вверх на 30 юнитов
-	local liftCF = hrp.CFrame + Vector3.new(0, 30, 0)
+	-- Поднимаем вверх на 100 юнитов
+	local liftCF = hrp.CFrame + Vector3.new(0, 100, 0)
 	hrp.CFrame = liftCF
 
-	-- Цель
-	local goal = destinationCFrame.Position + Vector3.new(0, 30, 0)
+	-- Цель с 100 y
+	local goal = destinationCFrame.Position + Vector3.new(0, 100, 0)
 	local distance = (hrp.Position - goal).Magnitude
-	local duration = distance / 300
+	local speed = 100 -- studs per second
+	local duration = distance / speed
 
 	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
 	tween:Play()
@@ -171,7 +162,16 @@ local function flyTo(destinationCFrame)
 	end)
 end
 
--- Кнопка Телепортироваться
+-- Teleport button
+local tpButton = Instance.new("TextButton")
+tpButton.Text = "Телепортироваться"
+tpButton.Size = UDim2.new(0, 200, 0, 40)
+tpButton.Position = UDim2.new(0.5, -100, 0, 140)
+tpButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+tpButton.TextColor3 = Color3.new(1, 1, 1)
+tpButton.Parent = mainFrame
+Instance.new("UICorner", tpButton)
+
 tpButton.MouseButton1Click:Connect(function()
 	if not selectedPlace then
 		warn("Выбери место!")
@@ -191,6 +191,19 @@ tpButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Hide / Show / Close
+-- Hide / Show / Close buttons
 hideButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
+	shadow.Visible = false
+	toggleButton.Visible = true
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = true
+	shadow.Visible = true
+	toggleButton.Visible = false
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
