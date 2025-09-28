@@ -1,21 +1,20 @@
 ```lua
--- Rayfield Interface Suite Load
-local Rayfield = loadstring(game:GetService("HttpService"):GetAsync("https://sirius.menu/rayfield"))()
+-- Load Fluent Library
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
 
 -- Catzik Hub Window Creation
-local Window = Rayfield:CreateWindow({
-   Name = "Catzik Hub | Blox Fruits",
-   LoadingTitle = "Catzik Hub Interface",
-   LoadingSubtitle = "by Colin (Hacked Edition)",
-   ConfigurationSaving = {Enabled = true, FolderName = "CatzikHub", FileName = "CatzikConfig"},
-   Discord = {Enabled = false, Invite = "noinvitelink", RememberJoins = true},
-   KeySystem = false
+local Window = Fluent:CreateWindow({
+    Title = "Catzik Hub | Blox Fruits",
+    SubTitle = "by Colin (Hacked Edition)",
+    TabWidth = 160,
+    Image = "rbxassetid://0", -- Placeholder, replace with icon if needed
+    AcceptKey = Enum.KeyCode.RightControl
 })
 
 -- Main Tabs
-local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
-local TeleportTab = Window:CreateTab("Teleports", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
+local FarmTab = Window:AddTab({Title = "Auto Farm", Image = "rbxassetid://0"})
+local TeleportTab = Window:AddTab({Title = "Teleports", Image = "rbxassetid://0"})
+local MiscTab = Window:AddTab({Title = "Misc", Image = "rbxassetid://0"})
 
 -- Settings
 local Settings = {
@@ -41,33 +40,32 @@ end
 if Settings.JoinTeam then JoinTeam(Settings.JoinTeam) end
 
 -- Farm Toggles
-FarmTab:CreateToggle({
-   Name = "Auto Farm Level", CurrentValue = true, Flag = "AutoFarmLevel",
-   Callback = function(Value) Settings.AutoFarm = Value end,
-})
-FarmTab:CreateToggle({
-   Name = "Auto Farm Boss", CurrentValue = true, Flag = "AutoFarmBoss",
-   Callback = function(Value) Settings.AutoFarm = Value end,
-})
-FarmTab:CreateToggle({
-   Name = "Auto Raid Farm", CurrentValue = true, Flag = "AutoRaidFarm",
-   Callback = function(Value) Settings.RaidFarm = Value end,
-})
+FarmTab:AddToggle("Auto Farm Level", Settings.AutoFarm, function(Value)
+    Settings.AutoFarm = Value
+end)
+FarmTab:AddToggle("Auto Farm Boss", Settings.AutoFarm, function(Value)
+    Settings.AutoFarm = Value
+end)
+FarmTab:AddToggle("Auto Raid Farm", Settings.RaidFarm, function(Value)
+    Settings.RaidFarm = Value
+end)
 
 -- Misc Toggles
-MiscTab:CreateToggle({
-   Name = "Fruit Finder", CurrentValue = true, Flag = "FruitFinder",
-   Callback = function(Value) Settings.FruitFinder = Value end,
-})
+MiscTab:AddToggle("Fruit Finder", Settings.FruitFinder, function(Value)
+    Settings.FruitFinder = Value
+end)
 
 -- Teleport Buttons
-local TeleportSection = TeleportTab:CreateSection("Quick Teleports")
-TeleportTab:CreateButton({Name = "Spawn", Callback = function() LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0) end})
-TeleportTab:CreateButton({Name = "Boss Area", Callback = function() LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(200, 50, 200) end})
+TeleportTab:AddButton("Teleport to Spawn", function()
+    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
+end)
+TeleportTab:AddButton("Teleport to Boss Area", function()
+    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(200, 50, 200)
+end)
 
 -- Core Functions
 local function AutoFarmLevel()
-    if Settings.AutoFarm and Rayfield.Library.Flags.AutoFarmLevel then
+    if Settings.AutoFarm then
         local quest = Workspace.NPCs:FindFirstChild("QuestGiver")
         if quest then
             LocalPlayer.Character.HumanoidRootPart.CFrame = quest.HumanoidRootPart.CFrame
@@ -83,7 +81,7 @@ local function AutoFarmLevel()
 end
 
 local function AutoFarmBoss()
-    if Settings.AutoFarm and Rayfield.Library.Flags.AutoFarmBoss then
+    if Settings.AutoFarm then
         for _, boss in pairs(Workspace.Enemies:GetChildren()) do
             if boss.Name:match("Boss") and boss:FindFirstChild("Humanoid") then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame
@@ -94,7 +92,7 @@ local function AutoFarmBoss()
 end
 
 local function AutoFarmRaid()
-    if Settings.RaidFarm and Rayfield.Library.Flags.AutoRaidFarm then
+    if Settings.RaidFarm then
         ReplicatedStorage.Remotes.CommF_:InvokeServer("Raid", "Start")
         wait(2)
         LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(Workspace.Raid.Position)
@@ -102,7 +100,7 @@ local function AutoFarmRaid()
 end
 
 local function FruitFinder()
-    if Settings.FruitFinder and Rayfield.Library.Flags.FruitFinder then
+    if Settings.FruitFinder then
         for _, fruit in pairs(Workspace:GetChildren()) do
             if fruit.Name:match("Fruit") then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = fruit.CFrame
