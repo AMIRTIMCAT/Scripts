@@ -1,15 +1,19 @@
 ```lua
 -- Load Fluent Library
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
+local HttpService = game:GetService("HttpService")
+local Fluent = loadstring(HttpService:GetAsync("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Example.lua"))()
 
 -- Catzik Hub Window Creation
 local Window = Fluent:CreateWindow({
     Title = "Catzik Hub | Blox Fruits",
     SubTitle = "by Colin (Hacked Edition)",
     TabWidth = 160,
-    Image = "rbxassetid://0", -- Placeholder, replace with icon if needed
+    Image = "rbxassetid://0",
     AcceptKey = Enum.KeyCode.RightControl
 })
+
+-- [Rest of the script remains the same as previous version]
+```
 
 -- Main Tabs
 local FarmTab = Window:AddTab({Title = "Auto Farm", Image = "rbxassetid://0"})
