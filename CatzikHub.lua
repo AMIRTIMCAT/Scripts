@@ -117,14 +117,13 @@ end)
 -- Noclip functions
 local noclipConnection
 local function enableNoclip(character)
-	local function onStepped()
+	noclipConnection = RunService.Stepped:Connect(function()
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") and part.CanCollide then
 				part.CanCollide = false
 			end
 		end
-	end
-	noclipConnection = RunService.Stepped:Connect(onStepped)
+	end)
 end
 
 local function disableNoclip()
@@ -151,7 +150,7 @@ local function flyTo(destinationCFrame)
 	-- Цель с 100 y
 	local goal = destinationCFrame.Position + Vector3.new(0, 100, 0)
 	local distance = (hrp.Position - goal).Magnitude
-	local speed = 5000 -- studs per second
+	local speed = 2000 -- studs per second
 	local duration = distance / speed
 
 	local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = destinationCFrame})
@@ -162,7 +161,7 @@ local function flyTo(destinationCFrame)
 	end)
 end
 
--- Teleport button
+-- Кнопка телепорта
 local tpButton = Instance.new("TextButton")
 tpButton.Text = "Телепортироваться"
 tpButton.Size = UDim2.new(0, 200, 0, 40)
@@ -198,12 +197,4 @@ hideButton.MouseButton1Click:Connect(function()
 	toggleButton.Visible = true
 end)
 
-toggleButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = true
-	shadow.Visible = true
-	toggleButton.Visible = false
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
-end)
+toggleButton.MouseButton1
