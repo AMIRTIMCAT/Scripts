@@ -238,3 +238,13 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
     disableNoclip()
 end)
+
+print(workspace:FindFirstChild("map")) -- должен вернуть объект или nil
+if workspace:FindFirstChild("map") then
+    for _, model in ipairs(workspace.map:GetChildren()) do
+        print(model.Name)
+    end
+else
+    warn("Папка 'map' не найдена в workspace!")
+end
+
