@@ -9,13 +9,13 @@ local RunService = game:GetService("RunService")
 
 local playerGui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ExecutorTeleportMenu"
+screenGui.Name = "MiniHubMenu"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 420, 0, 360)
+mainFrame.Size = UDim2.new(0, 450, 0, 400)
 mainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
 mainFrame.Active = true
@@ -42,68 +42,105 @@ mainFrame:GetPropertyChangedSignal("Position"):Connect(function()
     shadow.Position = mainFrame.Position + UDim2.new(0, 6, 0, 6)
 end)
 
+-- Заголовок
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1, -20, 0, 36)
 title.Position = UDim2.new(0, 10, 0, 8)
 title.BackgroundTransparency = 1
-title.Text = "Teleport Menu"
+title.Text = "Mini Hub"
 title.TextColor3 = Color3.fromRGB(230,230,230)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 20
+title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
 
-local dropDown = Instance.new("TextButton", mainFrame)
+-- Контейнер для вкладок
+local tabContainer = Instance.new("Frame", mainFrame)
+tabContainer.Size = UDim2.new(1, -20, 1, -60)
+tabContainer.Position = UDim2.new(0, 10, 0, 50)
+tabContainer.BackgroundTransparency = 1
+
+-- Таб меню сверху
+local tabMenu = Instance.new("Frame", mainFrame)
+tabMenu.Size = UDim2.new(1, -20, 0, 40)
+tabMenu.Position = UDim2.new(0, 10, 0, 40)
+tabMenu.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+tabMenu.ClipsDescendants = true
+local tabMenuCorner = Instance.new("UICorner", tabMenu)
+tabMenuCorner.CornerRadius = UDim.new(0, 8)
+
+local tabs = {}
+
+-- Функция для создания вкладки
+local function createTab(name)
+    local tabButton = Instance.new("TextButton", tabMenu)
+    tabButton.Size = UDim2.new(0, 140, 1, 0)
+    tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    tabButton.Font = Enum.Font.GothamBold
+    tabButton.TextSize = 18
+    tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabButton.Text = name
+    tabButton.AutoButtonColor = false
+    local corner = Instance.new("UICorner", tabButton)
+    corner.CornerRadius = UDim.new(0, 6)
+
+    local pageFrame = Instance.new("Frame", tabContainer)
+    pageFrame.Size = UDim2.new(1, 0, 1, 0)
+    pageFrame.BackgroundTransparency = 1
+    pageFrame.Visible = false
+
+    tabs[name] = {button = tabButton, frame = pageFrame}
+
+    tabButton.MouseButton1Click:Connect(function()
+        for _, tab in pairs(tabs) do
+            tab.frame.Visible = false
+            tab.button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            tab.button.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        pageFrame.Visible = true
+        tabButton.BackgroundColor3 = Color3.fromRGB(40, 110, 240)
+        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    return pageFrame
+end
+
+-- Создаем вкладку Teleport
+local teleportTab = createTab("Teleport")
+
+-- Элементы Teleport таба:
+
+local dropDown = Instance.new("TextButton", teleportTab)
 dropDown.Size = UDim2.new(0, 260, 0, 40)
-dropDown.Position = UDim2.new(0, 20, 0, 60)
+dropDown.Position = UDim2.new(0, 20, 0, 20)
 dropDown.BackgroundColor3 = Color3.fromRGB(60,60,60)
 dropDown.TextColor3 = Color3.fromRGB(245,245,245)
 dropDown.Text = "Выбрать место ▼"
 dropDown.Font = Enum.Font.Gotham
 dropDown.TextSize = 16
 Instance.new("UICorner", dropDown)
+dropDown.ZIndex = 10
 
-local optionsFrame = Instance.new("Frame", mainFrame)
+local optionsFrame = Instance.new("Frame", teleportTab)
 optionsFrame.Size = UDim2.new(0, 260, 0, 0)
-optionsFrame.Position = UDim2.new(0, 20, 0, 106)
+optionsFrame.Position = UDim2.new(0, 20, 0, 60)
 optionsFrame.BackgroundColor3 = Color3.fromRGB(45,45,45)
 optionsFrame.ClipsDescendants = true
 optionsFrame.Visible = false
 Instance.new("UICorner", optionsFrame)
+optionsFrame.ZIndex = 11
 
-local tpButton = Instance.new("TextButton", mainFrame)
+local tpButton = Instance.new("TextButton", teleportTab)
 tpButton.Size = UDim2.new(0, 260, 0, 44)
-tpButton.Position = UDim2.new(0, 20, 0, 160)
+tpButton.Position = UDim2.new(0, 20, 0, 120)
 tpButton.BackgroundColor3 = Color3.fromRGB(80,120,255)
 tpButton.Text = "Телепортироваться"
 tpButton.TextColor3 = Color3.fromRGB(255,255,255)
 tpButton.Font = Enum.Font.GothamBold
 tpButton.TextSize = 18
 Instance.new("UICorner", tpButton)
+tpButton.ZIndex = 10
 
-local hideButton = Instance.new("TextButton", mainFrame)
-hideButton.Size = UDim2.new(0, 90, 0, 36)
-hideButton.Position = UDim2.new(0, 20, 1, -56)
-hideButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
-hideButton.Text = "Скрыть"
-hideButton.TextColor3 = Color3.fromRGB(255,255,255)
-Instance.new("UICorner", hideButton)
-
-local closeButton = Instance.new("TextButton", mainFrame)
-closeButton.Size = UDim2.new(0, 90, 0, 36)
-closeButton.Position = UDim2.new(1, -110, 1, -56)
-closeButton.BackgroundColor3 = Color3.fromRGB(150,60,60)
-closeButton.Text = "Закрыть"
-closeButton.TextColor3 = Color3.fromRGB(255,255,255)
-Instance.new("UICorner", closeButton)
-
-local openButton = Instance.new("TextButton", screenGui)
-openButton.Size = UDim2.new(0, 140, 0, 40)
-openButton.Position = UDim2.new(0, 20, 1, -60)
-openButton.BackgroundColor3 = Color3.fromRGB(70,140,70)
-openButton.Text = "Открыть Меню"
-openButton.TextColor3 = Color3.fromRGB(255,255,255)
-openButton.Visible = false
-Instance.new("UICorner", openButton)
+-- Вкладка Teleport с элементами готова
 
 local options = {
     "Colosseum", "Desert", "Fountain", "Jungle", "Magma",
@@ -121,6 +158,7 @@ for i, name in ipairs(options) do
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 16
     Instance.new("UICorner", btn)
+    btn.ZIndex = 12
 
     btn.MouseButton1Click:Connect(function()
         selectedPlace = name
@@ -222,6 +260,34 @@ tpButton.MouseButton1Click:Connect(function()
     flyTo(cf)
 end)
 
+local hideButton = Instance.new("TextButton", mainFrame)
+hideButton.Size = UDim2.new(0, 90, 0, 36)
+hideButton.Position = UDim2.new(0, 20, 1, -56)
+hideButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
+hideButton.Text = "Скрыть"
+hideButton.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", hideButton)
+hideButton.ZIndex = 10
+
+local closeButton = Instance.new("TextButton", mainFrame)
+closeButton.Size = UDim2.new(0, 90, 0, 36)
+closeButton.Position = UDim2.new(1, -110, 1, -56)
+closeButton.BackgroundColor3 = Color3.fromRGB(150,60,60)
+closeButton.Text = "Закрыть"
+closeButton.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", closeButton)
+closeButton.ZIndex = 10
+
+local openButton = Instance.new("TextButton", screenGui)
+openButton.Size = UDim2.new(0, 140, 0, 40)
+openButton.Position = UDim2.new(0, 20, 1, -60)
+openButton.BackgroundColor3 = Color3.fromRGB(70,140,70)
+openButton.Text = "Открыть Меню"
+openButton.TextColor3 = Color3.fromRGB(255,255,255)
+openButton.Visible = false
+Instance.new("UICorner", openButton)
+openButton.ZIndex = 12
+
 hideButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     shadow.Visible = false
@@ -238,3 +304,7 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
     disableNoclip()
 end)
+
+-- Автоматически выбираем первую вкладку
+tabs["Teleport"].button:CaptureFocus()
+tabs["Teleport"].button:MouseButton1Click()
