@@ -1,5 +1,5 @@
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local player = game.Players.LocalPlayer
 
 -- Функция безопасной загрузки библиотеки
@@ -37,7 +37,6 @@ local window = Library.new({
     loading_title = "CatzikHub is loading...",
     game = game,
 })
-
 local teleportTab = window:Tab("Teleport")
 local playerTab = window:Tab("Player")
 local miscTab = window:Tab("Miscellaneous")
