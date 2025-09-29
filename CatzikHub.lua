@@ -416,6 +416,62 @@ invisButton.TextSize = 16 * scaleFactor
 Instance.new("UICorner", invisButton)
 invisButton.Parent = miscPage
 
+local redeemButton = Instance.new("TextButton")
+redeemButton.Size = UDim2.new(0, 260 * scaleFactor, 0, 40 * scaleFactor)
+redeemButton.Position = UDim2.new(0, 20 * scaleFactor, 0, 120 * scaleFactor)
+redeemButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+redeemButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+redeemButton.Text = "🎫 Redeem All Codes"
+redeemButton.Font = Enum.Font.Gotham
+redeemButton.TextSize = 16 * scaleFactor
+Instance.new("UICorner", redeemButton)
+redeemButton.Parent = miscPage
+
+-- Список кодов для Blox Fruits
+local codes = {
+    "LIGHTNINGABUSE", "1LOSTADMIN", "ADMINFIGHT", "NOMOREHACK", "BANEXPLOIT",
+    "krazydares", "TRIPLEABUSE", "24NOADMIN", "REWARDFUN", "Chandler",
+    "NEWTROLL", "KITT_RESET", "Sub2CaptainMaui", "kittgaming", "Sub2Fer999",
+    "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Bluxxy",
+    "fudd10_v2", "SUB2GAMERROBOT_EXP1", "Sub2NoobMaster123", "Sub2UncleKizaru",
+    "Sub2Daigrock", "Axiore", "TantaiGaming", "StrawHatMaine", "Sub2OfficialNoobie",
+    "Fudd10", "Bignews", "TheGreatAce", "SECRET_ADMIN", "SUB2GAMERROBOT_RESET1",
+    "SUB2OFFICIALNOOBIE", "AXIORE", "BIGNEWS", "BLUXXY", "CHANDLER", "ENYU_IS_PRO",
+    "FUDD10", "FUDD10_V2", "KITTGAMING", "MAGICBUS", "STARCODEHEO", "STRAWHATMAINE",
+    "SUB2CAPTAINMAUI", "SUB2DAIGROCK", "SUB2FER999", "SUB2NOOBMASTER123", "SUB2UNCLEKIZARU",
+    "TANTAIGAMING", "THEGREATACE"
+}
+
+-- Функция активации всех кодов
+local function redeemAllCodes()
+    local successCount = 0
+    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    if gameName:lower():find("blox fruits") then
+        local virtualInputManager = game:GetService("VirtualInputManager")
+        for _, code in ipairs(codes) do
+            local success, err = pcall(function()
+                virtualInputManager:SendKeyEvent(true, "T", false, game)
+                wait(0.1)
+                virtualInputManager:SendText(code)
+                wait(0.1)
+                virtualInputManager:SendKeyEvent(true, "Enter", false, game)
+                wait(0.2)
+                successCount = successCount + 1
+            end)
+            if not success then
+                warn("Ошибка при вводе кода '" .. code .. "': " .. (err or "неизвестная ошибка") .. " 😞")
+            end
+        end
+        if successCount > 0 then
+            warn("Успешно активировано " .. successCount .. " кодов! 🎉")
+        else
+            warn("Ни один код не был активирован. Проверьте их актуальность! ⚠")
+        end
+    else
+        warn("Эта функция работает только в Blox Fruits! 😕")
+    end
+end
+
 noclipButton.MouseButton1Click:Connect(function()
     local char = player.Character
     if char then
@@ -442,6 +498,8 @@ invisButton.MouseButton1Click:Connect(function()
         warn("Невидимость может быть заблокирована анти-читом! ⚠")
     end
 end)
+
+redeemButton.MouseButton1Click:Connect(redeemAllCodes)
 
 -- Кнопки управления GUI
 local function createButton(parent, size, pos, bgColor, text, textColor)
