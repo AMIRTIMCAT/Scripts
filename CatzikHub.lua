@@ -1,5 +1,13 @@
 -- Подключаем библиотеку redz-V5-remake
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
+local success, Library = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
+end)
+
+if not success or not Library then
+    warn("Не удалось загрузить библиотеку redz-V5-remake!")
+    return
+end
+
 
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
