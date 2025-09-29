@@ -2,58 +2,49 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
 
--- Безопасная загрузка библиотеки redz-V5-remake
+-- Функция безопасной загрузки библиотеки
 local function loadLibrary()
-    local url = "https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"
-    local httpResponse = nil
-    local success, err = pcall(function()
-        httpResponse = game:HttpGetAsync(url)
+    local success, response = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau")
     end)
-    if not success or not httpResponse or httpResponse == "" then
-        warn("Ошибка: не удалось загрузить библиотеку redz-V5-remake")
+    if not success or not response or response == "" then
+        warn("Не удалось загрузить библиотеку redz-V5-remake")
         return nil
     end
 
-    local func, loadError = loadstring(httpResponse)
+    local func, err = loadstring(response)
     if not func then
-        warn("Ошибка компиляции библиотеки:", loadError)
+        warn("Ошибка компиляции библиотеки: ".. tostring(err))
         return nil
     end
 
-    local lib = nil
-    local ok, res = pcall(function()
-        return func()
-    end)
-    if not ok or not res then
-        warn("Ошибка инициализации библиотеки:", res)
+    local ok, lib = pcall(func)
+    if not ok or not lib then
+        warn("Ошибка выполнения библиотеки: ".. tostring(lib))
         return nil
     end
-    return res
+
+    return lib
 end
 
 local Library = loadLibrary()
 if not Library then
-    return -- прерываем скрипт если библиотека не загрузилась
+    return -- если библиотека не загрузилась, прекращаем выполнение
 end
 
--- Создаем окно
 local window = Library.new({
     name = "CatzikHub",
     loading_title = "CatzikHub is loading...",
     game = game,
 })
 
--- Вкладки
 local teleportTab = window:Tab("Teleport")
 local playerTab = window:Tab("Player")
 local miscTab = window:Tab("Miscellaneous")
 
--- Глобальные переменные
 local noclipConn
 local selectedPlace = nil
 local options = {}
-
--- Функции
 
 local function toggleNoclip(character, enable)
     if noclipConn then
@@ -61,7 +52,7 @@ local function toggleNoclip(character, enable)
         noclipConn = nil
     end
     if enable and character then
-        local success, err = pcall(function()
+        local success, _ = pcall(function()
             noclipConn = RunService.Stepped:Connect(function()
                 if not character or not character.Parent then return end
                 for _, part in ipairs(character:GetDescendants()) do
@@ -144,8 +135,6 @@ local function updatePlayerStats(speed, jump)
     end
 end
 
--- UI
-
 local playerSection = playerTab:Section("Player Movement")
 
 playerSection:Slider("WalkSpeed", 16, {min = 16, max = 100, precise = true}, function(value)
@@ -218,5 +207,4 @@ miscSection:Button("Redeem All Codes", function()
     end
 end)
 
--- Запускаем UI
 window:Init()
