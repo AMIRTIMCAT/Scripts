@@ -172,26 +172,5 @@ miscSection:Toggle("Invisibility", false, function(state)
     end
 end)
 
-miscSection:Button("Redeem All Codes", function()
-    local codes = {
-        "update3", "yay1klikes", "release", "wupdate2",
-        "woo3500", "2.5klikesyay", "wow1.5klikes"
-    }
-    local VirtualInputManager = game:GetService("VirtualInputManager")
-
-    for _, code in pairs(codes) do
-        task.wait(0.3)
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.3)
-        for i = 1, #code do
-            local c = code:sub(i,i)
-            local key = Enum.KeyCode[c:upper()] or Enum.KeyCode.Unknown
-            VirtualInputManager:SendKeyEvent(true, key, false, game)
-            task.wait(0.03)
-        end
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-    end
-end)
-
 -- Запускаем UI
 window:Init()
