@@ -12,17 +12,17 @@ local window = Library.new({
     game = game,
 })
 
--- === Вкладки ===
+-- Вкладки
 local teleportTab = window:Tab("Teleport")
 local playerTab = window:Tab("Player")
 local miscTab = window:Tab("Miscellaneous")
 
--- === Глобальные переменные ===
+-- Глобальные переменные
 local noclipConn
 local selectedPlace = nil
 local options = {}
 
--- === Функции ===
+-- Функции
 
 -- Включить/выключить noclip
 local function toggleNoclip(character, enable)
@@ -115,7 +115,7 @@ local function updatePlayerStats(speed, jump)
     end
 end
 
--- === UI ===
+-- UI
 
 -- Player вкладка
 local playerSection = playerTab:Section("Player Movement")
