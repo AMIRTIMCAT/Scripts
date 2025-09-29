@@ -1,26 +1,40 @@
--- Подключаем библиотеку redz-V5-remake
-local httpResponse = game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau")
-if not httpResponse or httpResponse == "" then
-    warn("Ошибка загрузки библиотеки: пустой ответ от HttpGet")
-    return
-end
-
-local func, loadError = loadstring(httpResponse)
-if not func then
-    warn("Ошибка компиляции библиотеки:", loadError)
-    return
-end
-
-local Library = func()
-if not Library then
-    warn("Ошибка: библиотека вернула nil")
-    return
-end
-
-
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
+
+-- Безопасная загрузка библиотеки redz-V5-remake
+local function loadLibrary()
+    local url = "https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"
+    local httpResponse = nil
+    local success, err = pcall(function()
+        httpResponse = game:HttpGetAsync(url)
+    end)
+    if not success or not httpResponse or httpResponse == "" then
+        warn("Ошибка: не удалось загрузить библиотеку redz-V5-remake")
+        return nil
+    end
+
+    local func, loadError = loadstring(httpResponse)
+    if not func then
+        warn("Ошибка компиляции библиотеки:", loadError)
+        return nil
+    end
+
+    local lib = nil
+    local ok, res = pcall(function()
+        return func()
+    end)
+    if not ok or not res then
+        warn("Ошибка инициализации библиотеки:", res)
+        return nil
+    end
+    return res
+end
+
+local Library = loadLibrary()
+if not Library then
+    return -- прерываем скрипт если библиотека не загрузилась
+end
 
 -- Создаем окно
 local window = Library.new({
@@ -41,9 +55,11 @@ local options = {}
 
 -- Функции
 
--- Включить/выключить noclip
 local function toggleNoclip(character, enable)
-    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    if noclipConn then
+        noclipConn:Disconnect()
+        noclipConn = nil
+    end
     if enable and character then
         local success, err = pcall(function()
             noclipConn = RunService.Stepped:Connect(function()
@@ -59,7 +75,6 @@ local function toggleNoclip(character, enable)
     end
 end
 
--- Функция плавного перелёта к месту
 local function flyTo(destinationCFrame)
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -83,7 +98,6 @@ local function flyTo(destinationCFrame)
     end)
 end
 
--- Получить CFrame по названию места из workspace.Map
 local function getCFrameForPlace(name)
     local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then
@@ -103,7 +117,6 @@ local function getCFrameForPlace(name)
     return hrp.CFrame
 end
 
--- Обновить список зон для телепорта (из workspace.Map)
 local function updateOptions()
     local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then return end
@@ -116,7 +129,6 @@ local function updateOptions()
 end
 updateOptions()
 
--- Обновить параметры игрока (скорость, прыжок)
 local function updatePlayerStats(speed, jump)
     local char = player.Character
     if not char or not char:FindFirstChild("Humanoid") then
@@ -134,7 +146,6 @@ end
 
 -- UI
 
--- Player вкладка
 local playerSection = playerTab:Section("Player Movement")
 
 playerSection:Slider("WalkSpeed", 16, {min = 16, max = 100, precise = true}, function(value)
@@ -149,7 +160,6 @@ playerSection:Toggle("Noclip", false, function(enabled)
     toggleNoclip(player.Character, enabled)
 end)
 
--- Teleport вкладка
 local tpSection = teleportTab:Section("Teleport Zones")
 
 local dropdown = tpSection:Dropdown("Select Place", options, function(selected)
@@ -167,7 +177,6 @@ tpSection:Button("Fly to Selected", function()
     end
 end)
 
--- Обновляем опции в dropdown при изменении карты (например, через таймер)
 spawn(function()
     while true do
         task.wait(10)
@@ -176,7 +185,6 @@ spawn(function()
     end
 end)
 
--- Miscellaneous вкладка
 local miscSection = miscTab:Section("Miscellaneous Features")
 
 miscSection:Toggle("Invisibility", false, function(state)
@@ -186,6 +194,27 @@ miscSection:Toggle("Invisibility", false, function(state)
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
             part.Transparency = state and 1 or 0
         end
+    end
+end)
+
+miscSection:Button("Redeem All Codes", function()
+    local codes = {
+        "update3", "yay1klikes", "release", "wupdate2",
+        "woo3500", "2.5klikesyay", "wow1.5klikes"
+    }
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+
+    for _, code in pairs(codes) do
+        task.wait(0.3)
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.3)
+        for i = 1, #code do
+            local c = code:sub(i,i)
+            local key = Enum.KeyCode[c:upper()] or Enum.KeyCode.Unknown
+            VirtualInputManager:SendKeyEvent(true, key, false, game)
+            task.wait(0.03)
+        end
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
     end
 end)
 
