@@ -1,10 +1,19 @@
 -- Подключаем библиотеку redz-V5-remake
-local success, Library = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
-end)
+local httpResponse = game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau")
+if not httpResponse or httpResponse == "" then
+    warn("Ошибка загрузки библиотеки: пустой ответ от HttpGet")
+    return
+end
 
-if not success or not Library then
-    warn("Не удалось загрузить библиотеку redz-V5-remake!")
+local func, loadError = loadstring(httpResponse)
+if not func then
+    warn("Ошибка компиляции библиотеки:", loadError)
+    return
+end
+
+local Library = func()
+if not Library then
+    warn("Ошибка: библиотека вернула nil")
     return
 end
 
