@@ -1,161 +1,183 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
 
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
 local Window = Library:MakeWindow({
     Title = "Catzik Hub",
     SubTitle = "by Yoshi",
     ScriptFolder = "Catzik-Hub-V5"
 })
 
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
--- Noclip
+-- Noclip управление
+local noclipEnabled = false
 local function setNoclip(state)
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not state
+    noclipEnabled = state
+end
+RunService.Stepped:Connect(function()
+    if noclipEnabled and character then
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    else
+        if character then
+            for _, part in ipairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
         end
     end
-end
+end)
 
--- Tween перемещение
-local function tweenToPosition(targetCFrame)
-    local hrp = humanoidRootPart
-    if not hrp then return end
-
-    local tweenService = game:GetService("TweenService")
-    local targetPosition = targetCFrame.Position
-
-    local distance = (hrp.Position - targetPosition).Magnitude
-    local speed = 300
-    local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
-
-    setNoclip(true)  -- включаем noclip перед полётом
-    local tween = tweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
-    tween:Play()
-    tween.Completed:Wait()
-    setNoclip(false) -- отключаем noclip после полёта
-end
-
--- Teleport Tab
-local TabTeleport = Window:MakeTab({
+-- Вкладка Teleport
+local TeleportTab = Window:MakeTab({
     Title = "Teleport",
     Icon = "Car"
 })
 
-local teleportOptions = {}
-local function updateTeleportOptions()
-    teleportOptions = {}
+-- Обновляем список моделей из workspace.Map
+local function getMapModels()
     local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then
-        print("[Teleport] Map folder not found")
-        return
-    end
-    for _, model in ipairs(mapFolder:GetChildren()) do
-        if model:IsA("Model") then
-            local hasPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-            if hasPart then
-                table.insert(teleportOptions, model.Name)
+    local models = {}
+    if mapFolder then
+        for _, model in ipairs(mapFolder:GetChildren()) do
+            if model:IsA("Model") then
+                table.insert(models, model.Name)
             end
         end
     end
+    return models
 end
-updateTeleportOptions()
 
-local selectedPlace = teleportOptions[1]
+local selectedModelName = nil
 
-TabTeleport:AddDropdown({
-    Name = "Select Location",
-    Options = teleportOptions,
-    Default = selectedPlace,
+local comboBox = TeleportTab:AddDropdown({
+    Name = "Select Map Model",
+    Options = getMapModels(),
+    Default = nil,
+    MultiSelect = false,
     Callback = function(value)
-        selectedPlace = value
+        selectedModelName = value
     end
 })
 
-TabTeleport:AddButton({
+TeleportTab:AddButton({
     Name = "Teleport",
     Callback = function()
-        local mapFolder = workspace:FindFirstChild("Map")
-        if not mapFolder then
-            print("[Teleport Error] Map not found")
-            return
-        end
-        local model = mapFolder:FindFirstChild(selectedPlace)
-        if not model then
-            print("[Teleport Error] Model not found:", selectedPlace)
-            return
-        end
-        local part = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-        if not part then
-            print("[Teleport Error] No valid part found in model")
+        if not selectedModelName then
+            print("Выберите модель для телепорта!")
             return
         end
 
-        tweenToPosition(part.CFrame)
+        local mapFolder = workspace:FindFirstChild("Map")
+        if not mapFolder then
+            print("Папка 'Map' не найдена!")
+            return
+        end
+
+        local model = mapFolder:FindFirstChild(selectedModelName)
+        if not model then
+            print("Модель не найдена: "..selectedModelName)
+            return
+        end
+
+        -- Ищем BasePart для позиции (HumanoidRootPart или первый BasePart)
+        local basePart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        if not basePart then
+            print("В модели нет подходящей части (HumanoidRootPart/BasePart)")
+            return
+        end
+
+        local targetCFrame = basePart.CFrame
+
+        -- Tween полёт с noclip
+        local hrp = humanoidRootPart
+        local distance = (hrp.Position - targetCFrame.Position).Magnitude
+        local speed = 300
+        local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+        
+        setNoclip(true)
+        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+        tween:Play()
+        tween.Completed:Wait()
+        setNoclip(false)
+        
+        print("Телепорт выполнен к "..selectedModelName)
     end
 })
 
--- Farm Tab
-local TabFarm = Window:MakeTab({
+-- Вкладка Farm
+local FarmTab = Window:MakeTab({
     Title = "Farm",
     Icon = "Home"
 })
 
-local autoChest = false
-local lastLogTime = 0
+local autoChestEnabled = false
 
--- Получить все CFrame сундуков из workspace.ChestModels
-local function getAllChestCFrames()
-    local cframes = {}
-    local chestFolder = workspace:FindFirstChild("ChestModels")
-    if not chestFolder then
-        return cframes
-    end
-
-    for _, chest in ipairs(chestFolder:GetChildren()) do
-        if chest:IsA("Model") then
-            local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
-            if part then
-                table.insert(cframes, part.CFrame)
-            end
-        end
-    end
-
-    return cframes
-end
-
--- Цикл авто-честа
-task.spawn(function()
-    while true do
-        if autoChest then
-            local chests = getAllChestCFrames()
-
-            if tick() - lastLogTime >= 10 then
-                if #chests == 0 then
-                    print("[AutoChest] ❌ No chests found.")
-                else
-                    print("[AutoChest] ✅ Found", #chests, "chests.")
-                end
-                lastLogTime = tick()
-            end
-
-            for _, cframe in ipairs(chests) do
-                if not autoChest then break end
-                tweenToPosition(cframe)
-                task.wait(0.3)
-            end
-        end
-        task.wait(0.5)
-    end
-end)
-
-TabFarm:AddToggle({
+FarmTab:AddToggle({
     Name = "Auto Chest [ Tween ]",
     Default = false,
-    Callback = function(state)
-        autoChest = state
-        print("[AutoChest] Toggled:", state)
+    Callback = function(value)
+        autoChestEnabled = value
+        if autoChestEnabled then
+            spawn(function()
+                local chestFolder = workspace:FindFirstChild("ChestModels")
+                if not chestFolder then
+                    print("Папка ChestModels не найдена")
+                    return
+                end
+
+                for _, chest in ipairs(chestFolder:GetChildren()) do
+                    if not autoChestEnabled then break end -- стоп если выключили
+                    if chest:IsA("Model") then
+                        print("Летим к сундуку: "..chest.Name)
+                        local basePart = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
+                        if not basePart then
+                            print("В сундуке нет подходящей части: "..chest.Name)
+                            continue
+                        end
+                        -- Летим над сундуком на 10 юнитов выше
+                        local aboveCFrame = basePart.CFrame + Vector3.new(0, 10, 0)
+                        local hrp = humanoidRootPart
+                        local distance = (hrp.Position - aboveCFrame.Position).Magnitude
+                        local speed = 300
+                        local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+
+                        setNoclip(true)
+                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = aboveCFrame})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        setNoclip(false)
+
+                        print("Подлетели над сундуком: "..chest.Name)
+
+                        -- Ждем пока сундук исчезнет (соберется)
+                        while chest.Parent and autoChestEnabled do
+                            wait(0.5)
+                        end
+
+                        if not autoChestEnabled then
+                            print("Auto Chest выключен, прекращаем фарм")
+                            break
+                        end
+
+                        print("Сундук собран: "..chest.Name)
+                        wait(0.5) -- небольшая пауза перед следующим сундуком
+                    end
+                end
+
+                if autoChestEnabled then
+                    print("Все сундуки обработаны")
+                end
+            end)
+        end
     end
 })
