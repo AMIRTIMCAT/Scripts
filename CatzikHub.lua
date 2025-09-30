@@ -105,26 +105,19 @@ local TabFarm = Window:MakeTab({
 local autoChest = false
 local lastLogTime = 0
 
--- Получить все CFrame сундуков из всех Map.Модель.Chests
+-- Получить все CFrame сундуков из workspace.ChestModels
 local function getAllChestCFrames()
     local cframes = {}
-    local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then
+    local chestFolder = workspace:FindFirstChild("ChestModels")
+    if not chestFolder then
         return cframes
     end
 
-    for _, areaModel in ipairs(mapFolder:GetChildren()) do
-        if areaModel:IsA("Model") then
-            local chestsFolder = areaModel:FindFirstChild("Chests")
-            if chestsFolder and chestsFolder:IsA("Folder") then
-                for _, chest in ipairs(chestsFolder:GetChildren()) do
-                    if chest:IsA("Model") then
-                        local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
-                        if part then
-                            table.insert(cframes, part.CFrame)
-                        end
-                    end
-                end
+    for _, chest in ipairs(chestFolder:GetChildren()) do
+        if chest:IsA("Model") then
+            local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
+            if part then
+                table.insert(cframes, part.CFrame)
             end
         end
     end
