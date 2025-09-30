@@ -6,11 +6,6 @@ local Window = Library:MakeWindow({
     ScriptFolder = "Catzik-Hub-V5"
 })
 
-local Tab = Window:MakeTab({
-    Title = "Teleport",
-    Icon = "Car"
-})
-
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
@@ -23,6 +18,8 @@ local function setNoclip(state)
         end
     end
 end
+
+local tweenService = game:GetService("TweenService")
 
 -- Получить CFrame модели по имени из workspace.Map
 local function getCFrameForPlace(name)
@@ -44,7 +41,31 @@ local function getCFrameForPlace(name)
     return part.CFrame
 end
 
--- Обновить список названий моделей из workspace.Map, у которых есть BasePart или HumanoidRootPart
+-- Телепорт с Tween к позиции (поднятие на 80 Y)
+local function tweenToPosition(targetCFrame)
+    setNoclip(true)
+    local targetPos = targetCFrame.Position + Vector3.new(0, 80, 0)
+    local targetCF = CFrame.new(targetPos, targetCFrame.Position)
+    local distance = (humanoidRootPart.Position - targetPos).Magnitude
+    local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
+    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCF})
+    
+    local completed = Instance.new("BindableEvent")
+    tween.Completed:Connect(function()
+        completed:Fire()
+        completed:Destroy()
+    end)
+    
+    tween:Play()
+    return completed.Event
+end
+
+-- Таб Телепорта (уже есть)
+local TabTeleport = Window:MakeTab({
+    Title = "Teleport",
+    Icon = "Car"
+})
+
 local options = {}
 local function updateOptions()
     options = {}
@@ -61,56 +82,32 @@ local function updateOptions()
 end
 updateOptions()
 
--- Выбранное имя места для телепорта
 local selectedPlace = options[1]
 
--- Создаём дропдаун с выбором места телепорта
-local dropdown = Tab:AddDropdown({
+local dropdown = TabTeleport:AddDropdown({
     Name = "Select Location",
     Options = options,
     Default = selectedPlace,
     Callback = function(value)
         selectedPlace = value
-        print("Выбрано место:", value)
     end
 })
 
--- Кнопка телепорта с уведомлениями
-Tab:AddButton({
+TabTeleport:AddButton({
     Name = "Teleport",
     Callback = function()
-        if not selectedPlace then
-            warn("Место не выбрано!")
-            return
-        end
-
+        if not selectedPlace then return end
         local targetCFrame = getCFrameForPlace(selectedPlace)
-        if not targetCFrame then
-            warn("Не удалось получить позицию для '" .. selectedPlace .. "'")
-            return
-        end
+        if not targetCFrame then return end
 
         Window:Notify({
             Title = "Телепорт",
             Content = "Начинаю телепорт к " .. selectedPlace,
             Duration = 3,
-            Image = "rbxassetid://10734953451" -- Можно заменить на любую иконку
+            Image = "rbxassetid://10734953451"
         })
 
-        setNoclip(true)
-
-        -- Поднимаемся на 80 по Y
-        local targetPos = targetCFrame.Position + Vector3.new(0, 80, 0)
-        local targetCF = CFrame.new(targetPos, targetCFrame.Position)
-
-        local tweenService = game:GetService("TweenService")
-        local distance = (humanoidRootPart.Position - targetPos).Magnitude
-        local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
-
-        local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCF})
-        tween:Play()
-
-        tween.Completed:Connect(function()
+        tweenToPosition(targetCFrame):Connect(function()
             setNoclip(false)
             Window:Notify({
                 Title = "Телепорт",
@@ -118,7 +115,64 @@ Tab:AddButton({
                 Duration = 3,
                 Image = "rbxassetid://10734953451"
             })
-            print("Телепорт завершён, noclip выключен")
         end)
+    end
+})
+
+-- Таб Farm с ползунком Auto Chest [ Tween ]
+local TabFarm = Window:MakeTab({
+    Title = "Farm",
+    Icon = "Home"
+})
+
+local autoChest = false
+local chests = {"Chest1", "Chest2", "Chest3"}
+
+local function getChestCFrame(name)
+    local mapFolder = workspace:FindFirstChild("Map")
+    if not mapFolder then return nil end
+    local chestModel = mapFolder:FindFirstChild(name)
+    if not chestModel then return nil end
+    local part = chestModel:FindFirstChild("HumanoidRootPart") or chestModel:FindFirstChildWhichIsA("BasePart")
+    if not part then return nil end
+    return part.CFrame
+end
+
+-- Функция, которая циклично телепортирует к сундукам
+spawn(function()
+    while true do
+        if autoChest then
+            for _, chestName in ipairs(chests) do
+                if not autoChest then break end
+                local cframe = getChestCFrame(chestName)
+                if cframe then
+                    Window:Notify({
+                        Title = "Auto Chest",
+                        Content = "Лечу к " .. chestName,
+                        Duration = 2
+                    })
+                    tweenToPosition(cframe):Wait()
+                end
+                wait(0.3)
+            end
+        else
+            wait(0.5)
+        end
+    end
+end)
+
+TabFarm:AddSlider({
+    Name = "Auto Chest [ Tween ]",
+    Min = 0,
+    Max = 1,
+    Increment = 1,
+    Default = 0,
+    Callback = function(value)
+        autoChest = value == 1
+        if autoChest then
+            print("Auto Chest включён")
+        else
+            print("Auto Chest выключен")
+        end
     end
 })
