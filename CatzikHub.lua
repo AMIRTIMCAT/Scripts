@@ -24,79 +24,60 @@ local function setNoclip(state)
 end
 
 local mapFolder = workspace:FindFirstChild("Map")
-local locations = {}
-
--- Мапа имени к объекту (чтобы по имени потом быстро искать)
-local locationObjects = {}
-
-if mapFolder then
-  for _, obj in pairs(mapFolder:GetChildren()) do
-    if obj:IsA("Model") and obj.PrimaryPart then
-      table.insert(locations, obj.Name)
-      locationObjects[obj.Name] = obj
-    elseif obj:IsA("BasePart") then
-      table.insert(locations, obj.Name)
-      locationObjects[obj.Name] = obj
-    end
-  end
-else
-  warn("Map folder not found in workspace")
+if not mapFolder then
+  warn("Папка 'Map' не найдена в workspace!")
+  return
 end
 
-local selectedLocation = nil
+local modelNames = {}
+local modelsMap = {}
+
+for _, model in pairs(mapFolder:GetChildren()) do
+  if model:IsA("Model") and model.PrimaryPart then
+    table.insert(modelNames, model.Name)
+    modelsMap[model.Name] = model
+  end
+end
+
+local selectedModelName = modelNames[1]
 
 local dropdown = Tab:AddDropdown({
   Name = "Select Location",
-  Options = locations,
-  Default = locations[1] or "",
+  Options = modelNames,
+  Default = selectedModelName,
   Callback = function(value)
-    selectedLocation = value
-    print("Selected location:", value)
+    selectedModelName = value
+    print("Выбрана модель:", value)
   end
 })
 
 Tab:AddButton({
   Name = "Teleport",
   Callback = function()
-    if not selectedLocation then
-      warn("No location selected")
+    if not selectedModelName then
+      warn("Модель не выбрана!")
       return
     end
 
-    local targetObject = locationObjects[selectedLocation]
-    if not targetObject then
-      warn("Target object not found")
-      return
-    end
-
-    local targetPos
-    if targetObject:IsA("Model") then
-      targetPos = targetObject.PrimaryPart and targetObject.PrimaryPart.Position
-      if not targetPos then
-        warn("Model has no PrimaryPart")
-        return
-      end
-    elseif targetObject:IsA("BasePart") then
-      targetPos = targetObject.Position
-    else
-      warn("Unsupported target object type")
+    local targetModel = modelsMap[selectedModelName]
+    if not targetModel or not targetModel.PrimaryPart then
+      warn("Модель не найдена или не имеет PrimaryPart")
       return
     end
 
     setNoclip(true)
 
+    local targetPos = targetModel.PrimaryPart.Position + Vector3.new(0, 80, 0)
     local tweenService = game:GetService("TweenService")
-    local tweenInfo = TweenInfo.new(
-      (humanoidRootPart.Position - targetPos).Magnitude / 300,
-      Enum.EasingStyle.Linear
-    )
-    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPos + Vector3.new(0, 80, 0))})
+    local distance = (humanoidRootPart.Position - targetPos).Magnitude
+    local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
 
+    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPos)})
     tween:Play()
 
     tween.Completed:Connect(function()
       setNoclip(false)
-      print("Teleport complete, noclip off")
+      print("Телепорт завершён, noclip выключен")
     end)
   end
 })
