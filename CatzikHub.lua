@@ -43,7 +43,6 @@ local TeleportTab = Window:MakeTab({
     Icon = "Car"
 })
 
--- Обновляем список моделей из workspace.Map
 local function getMapModels()
     local mapFolder = workspace:FindFirstChild("Map")
     local models = {}
@@ -89,7 +88,6 @@ TeleportTab:AddButton({
             return
         end
 
-        -- Ищем BasePart для позиции (HumanoidRootPart или первый BasePart)
         local basePart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
         if not basePart then
             print("В модели нет подходящей части (HumanoidRootPart/BasePart)")
@@ -98,7 +96,6 @@ TeleportTab:AddButton({
 
         local targetCFrame = basePart.CFrame
 
-        -- Tween полёт с noclip
         local hrp = humanoidRootPart
         local distance = (hrp.Position - targetCFrame.Position).Magnitude
         local speed = 300
@@ -136,7 +133,7 @@ FarmTab:AddToggle({
                 end
 
                 for _, chest in ipairs(chestFolder:GetChildren()) do
-                    if not autoChestEnabled then break end -- стоп если выключили
+                    if not autoChestEnabled then break end
                     if chest:IsA("Model") then
                         print("Летим к сундуку: "..chest.Name)
                         local basePart = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
@@ -144,7 +141,6 @@ FarmTab:AddToggle({
                             print("В сундуке нет подходящей части: "..chest.Name)
                             continue
                         end
-                        -- Летим над сундуком на 10 юнитов выше
                         local aboveCFrame = basePart.CFrame + Vector3.new(0, 10, 0)
                         local hrp = humanoidRootPart
                         local distance = (hrp.Position - aboveCFrame.Position).Magnitude
@@ -159,7 +155,6 @@ FarmTab:AddToggle({
 
                         print("Подлетели над сундуком: "..chest.Name)
 
-                        -- Ждем пока сундук исчезнет (соберется)
                         while chest.Parent and autoChestEnabled do
                             wait(0.5)
                         end
@@ -170,12 +165,91 @@ FarmTab:AddToggle({
                         end
 
                         print("Сундук собран: "..chest.Name)
-                        wait(0.5) -- небольшая пауза перед следующим сундуком
+                        wait(0.5)
                     end
                 end
 
                 if autoChestEnabled then
                     print("Все сундуки обработаны")
+                end
+            end)
+        end
+    end
+})
+
+-- Вкладка Fruit
+local FruitTab = Window:MakeTab({
+    Title = "Fruit",
+    Icon = "Cherry"  -- иконка в библиотеке должна быть "Cherry"
+})
+
+local autoFruitEnabled = false
+
+local fruitsList = {
+    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spike Fruit", "Kilo Fruit", "Smoke Fruit", "Spring Fruit",
+    "Sand Fruit", "Ice Fruit", "Flame Fruit", "Barrier Fruit", "Bomb Fruit", "Falcon Fruit", "Rubber Fruit",
+    "Love Fruit", "Light Fruit", "Dark Fruit", "Quake Fruit", "Paw Fruit", "Diamond Fruit", "Buddha Fruit",
+    "Magma Fruit", "Door Fruit", "Rift Fruit", "Gravity Fruit", "Soul Fruit", "TRex Fruit", "Kitsune Fruit",
+    "Sound Fruit", "Mammoth Fruit", "Eagle Fruit", "Creation Fruit", "Yeti Fruit", "West Dragon Fruit",
+    "East Dragon Fruit", "Spirit Fruit", "Gas Fruit", "Pain Fruit", "Lightning Fruit", "Blizzard Fruit",
+    "Control Fruit", "Venom Fruit", "Dragon Fruit", "Leopard Fruit", "Shadow Fruit"
+}
+
+FruitTab:AddToggle({
+    Name = "Auto Collect Fruit",
+    Default = false,
+    Callback = function(value)
+        autoFruitEnabled = value
+        if autoFruitEnabled then
+            spawn(function()
+                local fruitFolder = workspace:FindFirstChild("Fruit") or workspace
+                if not fruitFolder then
+                    print("Папка 'Fruit' не найдена!")
+                    autoFruitEnabled = false
+                    return
+                end
+                
+                while autoFruitEnabled do
+                    for _, fruitName in ipairs(fruitsList) do
+                        if not autoFruitEnabled then break end
+
+                        local fruitModel = fruitFolder:FindFirstChild(fruitName)
+                        if fruitModel and fruitModel:IsA("Model") then
+                            local basePart = fruitModel:FindFirstChild("HumanoidRootPart") or fruitModel:FindFirstChildWhichIsA("BasePart")
+                            if not basePart then
+                                print("В фрукте нет подходящей части: "..fruitName)
+                                continue
+                            end
+
+                            local aboveCFrame = basePart.CFrame + Vector3.new(0, 10, 0)
+                            local hrp = humanoidRootPart
+                            local distance = (hrp.Position - aboveCFrame.Position).Magnitude
+                            local speed = 300
+                            local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+
+                            setNoclip(true)
+                            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = aboveCFrame})
+                            tween:Play()
+                            tween.Completed:Wait()
+                            setNoclip(false)
+
+                            print("Подлетели к фрукту: "..fruitName)
+
+                            -- Ждём пока фрукт соберут (исчезнет)
+                            while fruitModel.Parent and autoFruitEnabled do
+                                wait(0.5)
+                            end
+
+                            if not autoFruitEnabled then
+                                print("Auto Collect Fruit выключен")
+                                break
+                            end
+
+                            print("Фрукт собран: "..fruitName)
+                            wait(0.5)
+                        end
+                    end
+                    wait(1) -- небольшая пауза между циклами
                 end
             end)
         end
