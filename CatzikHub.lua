@@ -23,6 +23,23 @@ local function setNoclip(state)
   end
 end
 
+local function getModelPosition(model)
+  -- Пытаемся получить позицию через PrimaryPart
+  if model.PrimaryPart then
+    return model.PrimaryPart.Position
+  end
+
+  -- Если PrimaryPart нет — ищем первую BasePart внутри модели
+  for _, part in pairs(model:GetChildren()) do
+    if part:IsA("BasePart") then
+      return part.Position
+    end
+  end
+
+  -- Если ничего нет, возвращаем nil
+  return nil
+end
+
 local mapFolder = workspace:FindFirstChild("Map")
 if not mapFolder then
   warn("Папка 'Map' не найдена в workspace!")
@@ -33,9 +50,12 @@ local modelNames = {}
 local modelsMap = {}
 
 for _, model in pairs(mapFolder:GetChildren()) do
-  if model:IsA("Model") and model.PrimaryPart then
-    table.insert(modelNames, model.Name)
-    modelsMap[model.Name] = model
+  if model:IsA("Model") then
+    local pos = getModelPosition(model)
+    if pos then
+      table.insert(modelNames, model.Name)
+      modelsMap[model.Name] = model
+    end
   end
 end
 
@@ -60,14 +80,20 @@ Tab:AddButton({
     end
 
     local targetModel = modelsMap[selectedModelName]
-    if not targetModel or not targetModel.PrimaryPart then
-      warn("Модель не найдена или не имеет PrimaryPart")
+    if not targetModel then
+      warn("Модель не найдена")
+      return
+    end
+
+    local targetPos = getModelPosition(targetModel)
+    if not targetPos then
+      warn("Не удалось получить позицию модели")
       return
     end
 
     setNoclip(true)
 
-    local targetPos = targetModel.PrimaryPart.Position + Vector3.new(0, 80, 0)
+    targetPos = targetPos + Vector3.new(0, 80, 0)
     local tweenService = game:GetService("TweenService")
     local distance = (humanoidRootPart.Position - targetPos).Magnitude
     local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
