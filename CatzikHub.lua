@@ -23,7 +23,6 @@ local function getCFrameForPlace(name)
         warn("Модель '" .. name .. "' не найдена!")
         return nil
     end
-    -- Ищем любую BasePart для телепорта
     local part = nil
     for _, child in ipairs(model:GetChildren()) do
         if child:IsA("BasePart") then
@@ -38,7 +37,6 @@ local function getCFrameForPlace(name)
     return part.CFrame
 end
 
--- Список зон для ComboBox
 local teleportOptions = {}
 local function updateTeleportOptions()
     local mapFolder = workspace:FindFirstChild("Map")
@@ -54,7 +52,7 @@ updateTeleportOptions()
 
 local selectedTeleport = nil
 
-local teleportDropdown = TeleportTab:AddDropdown({
+TeleportTab:AddDropdown({
     Name = "Select Location",
     Options = teleportOptions,
     Default = teleportOptions[1],
@@ -85,10 +83,9 @@ TeleportTab:AddButton({
         end
 
         local TweenService = game:GetService("TweenService")
-        local targetCFrame = cframe * CFrame.new(0, 80, 0) -- подъём на 80 по Y
+        local targetCFrame = cframe * CFrame.new(0, 80, 0)
         local tweenInfo = TweenInfo.new((hrp.Position - targetCFrame.Position).Magnitude / 300, Enum.EasingStyle.Linear)
 
-        -- Включаем noclip
         local noclipConnection
         local function noclip()
             for _, part in pairs(char:GetChildren()) do
@@ -105,8 +102,6 @@ TeleportTab:AddButton({
         tween.Completed:Wait()
 
         if noclipConnection then noclipConnection:Disconnect() end
-
-        -- Позволяем персонажу спокойно упасть
         wait(1)
         print("Телепорт завершён!")
     end
@@ -118,42 +113,6 @@ local FarmTab = Window:MakeTab({
     Icon = "Home"
 })
 
--- UI Scale
-local uiScaleEnabled = false
-local uiScaleValue = 1
-
-local uiScaleInstance = Instance.new("UIScale")
-uiScaleInstance.Parent = Window.Main
-uiScaleInstance.Scale = 1
-uiScaleInstance.Enabled = false
-
-FarmTab:AddToggle({
-    Name = "Enable UI Scale",
-    Default = false,
-    Callback = function(value)
-        uiScaleEnabled = value
-        uiScaleInstance.Enabled = uiScaleEnabled
-        if uiScaleEnabled then
-            uiScaleInstance.Scale = uiScaleValue
-        end
-    end
-})
-
-FarmTab:AddSlider({
-    Name = "UI Scale",
-    Min = 0.5,
-    Max = 2,
-    Default = 1,
-    Increment = 0.05,
-    Callback = function(value)
-        uiScaleValue = value
-        if uiScaleEnabled then
-            uiScaleInstance.Scale = uiScaleValue
-        end
-    end
-})
-
--- Автосбор сундуков
 local autoChest = false
 local TweenService = game:GetService("TweenService")
 local player = game.Players.LocalPlayer
@@ -179,7 +138,6 @@ FarmTab:AddToggle({
                         if not autoChest then break end
                         if chest:IsA("Model") then
                             local basePart = nil
-                            -- Ищем базовую деталь для телепорта
                             for _, part in ipairs(chest:GetChildren()) do
                                 if part:IsA("BasePart") then
                                     basePart = part
@@ -188,7 +146,6 @@ FarmTab:AddToggle({
                             end
 
                             if basePart then
-                                -- Включаем noclip
                                 local noclipConnection
                                 local function noclip()
                                     for _, part in pairs(char:GetChildren()) do
@@ -208,8 +165,6 @@ FarmTab:AddToggle({
                                 tween.Completed:Wait()
 
                                 if noclipConnection then noclipConnection:Disconnect() end
-
-                                -- Ждём пока сундук соберётся (или пауза)
                                 wait(2)
                             else
                                 print("В сундуке нет BasePart:", chest.Name)
@@ -217,7 +172,7 @@ FarmTab:AddToggle({
                         end
                     end
 
-                    wait(10) -- пауза между обходом сундуков
+                    wait(10)
                 end
             end)
         end
@@ -275,7 +230,6 @@ FruitTab:AddToggle({
                                 end
                             end
                             if basePart then
-                                -- Включаем noclip
                                 local noclipConnection
                                 local function noclip()
                                     for _, part in pairs(char:GetChildren()) do
@@ -295,7 +249,6 @@ FruitTab:AddToggle({
                                 tween.Completed:Wait()
 
                                 if noclipConnection then noclipConnection:Disconnect() end
-
                                 wait(2)
                             else
                                 print("Нет BasePart у фрукта:", fruitName)
@@ -305,6 +258,46 @@ FruitTab:AddToggle({
                     wait(10)
                 end
             end)
+        end
+    end
+})
+
+-- HOME TAB (для UI Scale)
+local HomeTab = Window:MakeTab({
+    Title = "Home",
+    Icon = "Home"
+})
+
+local uiScaleEnabled = false
+local uiScaleValue = 1
+
+local uiScaleInstance = Instance.new("UIScale")
+uiScaleInstance.Parent = Window.Main
+uiScaleInstance.Scale = 1
+uiScaleInstance.Enabled = false
+
+HomeTab:AddToggle({
+    Name = "Enable UI Scale",
+    Default = false,
+    Callback = function(value)
+        uiScaleEnabled = value
+        uiScaleInstance.Enabled = uiScaleEnabled
+        if uiScaleEnabled then
+            uiScaleInstance.Scale = uiScaleValue
+        end
+    end
+})
+
+HomeTab:AddSlider({
+    Name = "UI Scale",
+    Min = 0.5,
+    Max = 2,
+    Default = 1,
+    Increment = 0.05,
+    Callback = function(value)
+        uiScaleValue = value
+        if uiScaleEnabled then
+            uiScaleInstance.Scale = uiScaleValue
         end
     end
 })
