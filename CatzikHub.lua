@@ -75,7 +75,7 @@ local dropdown = Tab:AddDropdown({
     end
 })
 
--- Кнопка телепорта
+-- Кнопка телепорта с уведомлениями
 Tab:AddButton({
     Name = "Teleport",
     Callback = function()
@@ -89,6 +89,13 @@ Tab:AddButton({
             warn("Не удалось получить позицию для '" .. selectedPlace .. "'")
             return
         end
+
+        Window:Notify({
+            Title = "Телепорт",
+            Content = "Начинаю телепорт к " .. selectedPlace,
+            Duration = 3,
+            Image = "rbxassetid://10734953451" -- Можно заменить на любую иконку
+        })
 
         setNoclip(true)
 
@@ -105,6 +112,12 @@ Tab:AddButton({
 
         tween.Completed:Connect(function()
             setNoclip(false)
+            Window:Notify({
+                Title = "Телепорт",
+                Content = "Вы успешно телепортировались в " .. selectedPlace,
+                Duration = 3,
+                Image = "rbxassetid://10734953451"
+            })
             print("Телепорт завершён, noclip выключен")
         end)
     end
