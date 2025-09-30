@@ -188,15 +188,14 @@ local FruitTab = Window:MakeTab({
 local autoCollectFruit = false
 
 local fruitNames = {
-    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spike Fruit", "Kilo Fruit", "Smoke Fruit",
-    "Spring Fruit", "Sand Fruit", "Ice Fruit", "Flame Fruit", "Barrier Fruit", "Bomb Fruit",
-    "Falcon Fruit", "Rubber Fruit", "Love Fruit", "Light Fruit", "Dark Fruit", "Quake Fruit",
-    "Paw Fruit", "Diamond Fruit", "Buddha Fruit", "Magma Fruit", "Quake Fruit", "Buddha Fruit",
-    "Door Fruit", "Rift Fruit", "Gravity Fruit", "Soul Fruit", "TRex Fruit", "Kitsune Fruit",
-    "Sound Fruit", "Mammoth Fruit", "Eagle Fruit", "Creation Fruit", "Yeti Fruit",
-    "West Dragon Fruit", "East Dragon Fruit", "Spirit Fruit", "Gas Fruit", "Pain Fruit",
-    "Lightning Fruit", "Blizzard Fruit", "Control Fruit", "Venom Fruit", "Dragon Fruit",
-    "Leopard Fruit", "Shadow Fruit"
+    "Rocket Fruit", "Spin Fruit", "Blade Fruit", "Spring Fruit", "Bomb Fruit", "Smoke Fruit",
+    "Spike Fruit", "Flame Fruit", "Ice Fruit", "Sand Fruit", "Dark Fruit", "Egale Fruit",
+    "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Ghost Fruit", "Magma Fruit", "Quake Fruit",
+    "Buddha Fruit", "Love Fruit", "Creation Fruit", "Spider Fruit", "Sound Fruit", "Phoenix Fruit",
+    "Portal Fruit", "Lightning Fruit", "Pain Fruit", "Blizzard Fruit", "Gravity Fruit", "Mammoth Fruit",
+    "TRex Fruit", "Dough Fruit", "Shadow Fruit", "Venom Fruit", "Control Fruit",
+    "Gas Fruit", "Spirit Fruit", "Leopard Fruit", "Yeti Fruit", "Kitsune Fruit",
+    "Dragon Fruit"
 }
 
 FruitTab:AddToggle({
