@@ -1,11 +1,12 @@
--- Подключаем библиотеку
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
-if not Library then
-    warn("Не удалось загрузить библиотеку")
-    return
-end
+-- Подключение библиотеки redz-V5-remake
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
 
--- Создаем окно
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Создание окна
 local Window = Library:MakeWindow({
     Title = "Catzik Hub",
     SubTitle = "by Yoshi",
@@ -15,27 +16,27 @@ local Window = Library:MakeWindow({
 -- Вкладки
 local TeleportTab = Window:Tab("Teleport")
 local PlayerTab = Window:Tab("Player")
-local MiscTab = Window:Tab("Misc")
+local MiscTab = Window:Tab("Miscellaneous")
 
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local player = game.Players.LocalPlayer
-
--- Глобальные переменные
+-- Переменные
 local noclipConn = nil
 local selectedPlace = nil
 local options = {}
 
--- === Функции ===
+-- Функция: обновить параметры игрока
+local function updatePlayerStats(speed, jump)
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    if speed then hum.WalkSpeed = math.clamp(speed, 0, 100) end
+    if jump then hum.JumpPower = math.clamp(jump, 0, 200) end
+end
 
--- Ноклип: отключает коллизию для всех частей персонажа
+-- Функция: включение/выключение noclip
 local function toggleNoclip(character, enable)
-    if noclipConn then
-        noclipConn:Disconnect()
-        noclipConn = nil
-    end
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
     if enable and character then
-        local ok, err = pcall(function()
+        local success = pcall(function()
             noclipConn = RunService.Stepped:Connect(function()
                 if not character or not character.Parent then return end
                 for _, part in ipairs(character:GetDescendants()) do
@@ -45,25 +46,33 @@ local function toggleNoclip(character, enable)
                 end
             end)
         end)
-        if not ok then
-            warn("Ошибка включения noclip:", err)
-        end
+        if not success then warn("Noclip ошибка!") end
     end
 end
 
--- Плавный “полет” к месту
+-- Функция: получить CFrame точки по имени
+local function getCFrameForPlace(name)
+    local map = workspace:FindFirstChild("Map")
+    if not map then return end
+    local model = map:FindFirstChild(name)
+    if not model then return end
+    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    return hrp and hrp.CFrame
+end
+
+-- Функция: плавный полет к цели
 local function flyTo(destinationCFrame)
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not char or not hrp or not destinationCFrame then
-        warn("flyTo: неверные параметры")
-        return
-    end
+    if not hrp or not destinationCFrame then return end
+
     toggleNoclip(char, true)
     hrp.CFrame = hrp.CFrame + Vector3.new(0, 100, 0)
+
     local targetAbove = CFrame.new(destinationCFrame.Position + Vector3.new(0, 100, 0), destinationCFrame.Position)
-    local distance = (hrp.Position - targetAbove.Position).Magnitude
-    local duration = math.max(0.01, distance / 300)
+    local dist = (hrp.Position - targetAbove.Position).Magnitude
+    local duration = math.max(0.01, dist / 300)
+
     local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetAbove})
     tween:Play()
     tween.Completed:Connect(function()
@@ -75,82 +84,46 @@ local function flyTo(destinationCFrame)
     end)
 end
 
--- Получить CFrame места из workspace.Map
-local function getCFrameForPlace(name)
-    local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then
-        warn("getCFrameForPlace: папка Map не найдена")
-        return nil
-    end
-    local model = mapFolder:FindFirstChild(name)
-    if not model then
-        warn("getCFrameForPlace: модель " .. name .. " не найдена")
-        return nil
-    end
-    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-    if not hrp then
-        warn("getCFrameForPlace: нет HumanoidRootPart")
-        return nil
-    end
-    return hrp.CFrame
-end
-
--- Обновить список мест для телепорта
+-- Функция: обновить список зон
 local function updateOptions()
-    local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then
-        options = {}
-        return
-    end
+    local map = workspace:FindFirstChild("Map")
     options = {}
-    for _, model in ipairs(mapFolder:GetChildren()) do
-        if model:IsA("Model") then
-            table.insert(options, model.Name)
+    if map then
+        for _, model in ipairs(map:GetChildren()) do
+            if model:IsA("Model") then
+                table.insert(options, model.Name)
+            end
         end
     end
 end
 
--- Обновить характеристики игрока
-local function updatePlayerStats(speed, jump)
-    local char = player.Character
-    if not char or not char:FindFirstChild("Humanoid") then
-        warn("updatePlayerStats: humanoid не найден")
-        return
-    end
-    local humanoid = char.Humanoid
-    if speed then
-        humanoid.WalkSpeed = math.clamp(speed, 0, 100)
-    end
-    if jump then
-        humanoid.JumpPower = math.clamp(jump, 0, 200)
-    end
-end
+updateOptions()
 
--- === UI: подключаем функции к интерфейсу ===
+-- === UI ===
 
--- Player вкладка
+-- Player Tab
 do
-    local section = PlayerTab:Section("Player Controls")
+    local section = PlayerTab:Section("Movement")
+    section:Slider("WalkSpeed", 16, {min = 16, max = 100, precise = true}, function(value)
+        updatePlayerStats(value, nil)
+    end)
+    section:Slider("JumpPower", 50, {min = 50, max = 200, precise = true}, function(value)
+        updatePlayerStats(nil, value)
+    end)
     section:Toggle("Noclip", false, function(state)
         toggleNoclip(player.Character, state)
     end)
-    section:Slider("WalkSpeed", 16, { min = 16, max = 100, precise = true }, function(val)
-        updatePlayerStats(val, nil)
-    end)
-    section:Slider("JumpPower", 50, { min = 50, max = 200, precise = true }, function(val)
-        updatePlayerStats(nil, val)
-    end)
 end
 
--- Teleport вкладка
+-- Teleport Tab
 do
-    local section = TeleportTab:Section("Teleport")
-    local dropdown = section:Dropdown("Select Place", options, function(choice)
-        selectedPlace = choice
+    local section = TeleportTab:Section("Map Teleport")
+    local dropdown = section:Dropdown("Select Place", options, function(selected)
+        selectedPlace = selected
     end)
     section:Button("Fly to Selected", function()
         if not selectedPlace then
-            warn("Вы не выбрали место")
+            warn("Место не выбрано")
             return
         end
         local cf = getCFrameForPlace(selectedPlace)
@@ -159,7 +132,6 @@ do
         end
     end)
 
-    -- Автообновление dropdown каждые 10 секунд
     spawn(function()
         while true do
             task.wait(10)
@@ -169,9 +141,10 @@ do
     end)
 end
 
--- Misc вкладка
+-- Misc Tab
 do
-    local section = MiscTab:Section("Misc Features")
+    local section = MiscTab:Section("Other Features")
+
     section:Toggle("Invisibility", false, function(state)
         local char = player.Character
         if not char then return end
@@ -181,11 +154,13 @@ do
             end
         end
     end)
+
     section:Button("Redeem All Codes", function()
         local codes = {
             "update3", "yay1klikes", "release", "wupdate2",
             "woo3500", "2.5klikesyay", "wow1.5klikes"
         }
+
         local VirtualInputManager = game:GetService("VirtualInputManager")
         for _, code in ipairs(codes) do
             task.wait(0.3)
@@ -202,6 +177,5 @@ do
     end)
 end
 
--- Инициализируем UI
+-- Init UI
 Window:Init()
-
