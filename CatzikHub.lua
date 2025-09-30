@@ -1,17 +1,49 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
+-- Безопасная загрузка библиотеки
+local function LoadRedzLibrary()
+    local url = "https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"
+    local ok, res = pcall(game.HttpGet, game, url)
+    if not ok or type(res) ~= "string" then
+        warn("Не удалось HTTP-загрузить библиотеку")
+        return nil
+    end
+    local func, err = loadstring(res)
+    if not func then
+        warn("Ошибка компиляции библиотеки: " .. tostring(err))
+        return nil
+    end
+    local success, lib = pcall(func)
+    if not success or type(lib) ~= "table" then
+        warn("Библиотека не инициализировалась, возвращён не table")
+        return nil
+    end
+    return lib
+end
 
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local Library = LoadRedzLibrary()
+if not Library then
+    return
+end
 
--- Создание окна
+-- Проверка метода MakeWindow
+if type(Library.MakeWindow) ~= "function" then
+    warn("Метод MakeWindow недоступен в библиотеке")
+    return
+end
+
+-- Строка ~17 — создание окна
 local Window = Library:MakeWindow({
     Title = "Catzik Hub",
     SubTitle = "by Yoshi",
     ScriptFolder = "redz-library-V5"
 })
 
+-- Проверка, что Window — не nil и имеет методы
+if Window == nil or type(Window.Page) ~= "function" then
+    warn("Window или метод Page недоступны")
+    return
+end
+
+-- Теперь уже безопасно:
 local TeleportTab = Window:Page("Teleport")
 local PlayerTab = Window:Page("Player")
 local MiscTab = Window:Page("Miscellaneous")
