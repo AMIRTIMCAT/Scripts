@@ -1,4 +1,3 @@
--- Подключение библиотеки redz-V5-remake
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/main/redz-V5-remake/main.luau"))()
 
 local TweenService = game:GetService("TweenService")
@@ -13,7 +12,6 @@ local Window = Library:MakeWindow({
     ScriptFolder = "redz-library-V5"
 })
 
--- Вкладки
 local TeleportTab = Window:Page("Teleport")
 local PlayerTab = Window:Page("Player")
 local MiscTab = Window:Page("Miscellaneous")
