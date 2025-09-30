@@ -276,16 +276,51 @@ local function createESP(player)
     if espObjects[player] then return end
 
     local char = player.Character
-    if char then
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "ESP_Highlight"
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.Adornee = char
-        highlight.Parent = char
-        espObjects[player] = highlight
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESP_Billboard"
+        billboard.Size = UDim2.new(0, 200, 0, 60)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Adornee = char:FindFirstChild("HumanoidRootPart")
+
+        -- Имя игрока
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        nameLabel.Position = UDim2.new(0, 0, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextScaled = true
+        nameLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.Text = player.Name
+        nameLabel.Parent = billboard
+
+        -- HP
+        local hpLabel = Instance.new("TextLabel")
+        hpLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        hpLabel.Position = UDim2.new(0, 0, 0.33, 0)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.TextScaled = true
+        hpLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        hpLabel.Font = Enum.Font.SourceSans
+        hpLabel.Text = "HP: ???"
+        hpLabel.Name = "HPLabel"
+        hpLabel.Parent = billboard
+
+        -- Distance
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        distLabel.Position = UDim2.new(0, 0, 0.66, 0)
+        distLabel.BackgroundTransparency = 1
+        distLabel.TextScaled = true
+        distLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        distLabel.Font = Enum.Font.SourceSans
+        distLabel.Text = "Distance: ???"
+        distLabel.Name = "DistLabel"
+        distLabel.Parent = billboard
+
+        billboard.Parent = game.CoreGui
+        espObjects[player] = billboard
     end
 end
 
@@ -299,22 +334,41 @@ end
 local function updateESP()
     while espEnabled do
         for _, player in pairs(game.Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 if not espObjects[player] then
                     createESP(player)
-                else
-                    espObjects[player].Adornee = player.Character
+                end
+
+                local char = player.Character
+                local rootPart = char:FindFirstChild("HumanoidRootPart")
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                local billboard = espObjects[player]
+
+                if billboard and rootPart then
+                    local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
+
+                    local hpLabel = billboard:FindFirstChild("HPLabel")
+                    if hpLabel and humanoid then
+                        hpLabel.Text = "HP: " .. math.floor(humanoid.Health)
+                    end
+
+                    local distLabel = billboard:FindFirstChild("DistLabel")
+                    if distLabel then
+                        distLabel.Text = "Distance: " .. math.floor(distance) .. "m"
+                    end
+
+                    billboard.Adornee = rootPart
                 end
             else
                 removeESP(player)
             end
         end
-        task.wait(1)
+        task.wait(0.5)
     end
 end
 
 VisualTab:AddToggle({
-    Name = "ESP Players",
+    Name = "ESP Players (Name, HP, Distance)",
     Default = false,
     Callback = function(value)
         espEnabled = value
