@@ -23,20 +23,18 @@ local function setNoclip(state)
   end
 end
 
-local function getModelPosition(model)
-  -- Пытаемся получить позицию через PrimaryPart
+local function getModelCFrame(model)
   if model.PrimaryPart then
-    return model.PrimaryPart.Position
+    return model.PrimaryPart.CFrame
   end
 
-  -- Если PrimaryPart нет — ищем первую BasePart внутри модели
+  -- Если PrimaryPart нет, пытаемся взять CFrame первого BasePart
   for _, part in pairs(model:GetChildren()) do
     if part:IsA("BasePart") then
-      return part.Position
+      return part.CFrame
     end
   end
 
-  -- Если ничего нет, возвращаем nil
   return nil
 end
 
@@ -51,8 +49,8 @@ local modelsMap = {}
 
 for _, model in pairs(mapFolder:GetChildren()) do
   if model:IsA("Model") then
-    local pos = getModelPosition(model)
-    if pos then
+    local cf = getModelCFrame(model)
+    if cf then
       table.insert(modelNames, model.Name)
       modelsMap[model.Name] = model
     end
@@ -85,20 +83,23 @@ Tab:AddButton({
       return
     end
 
-    local targetPos = getModelPosition(targetModel)
-    if not targetPos then
-      warn("Не удалось получить позицию модели")
+    local targetCFrame = getModelCFrame(targetModel)
+    if not targetCFrame then
+      warn("Не удалось получить CFrame модели")
       return
     end
 
     setNoclip(true)
 
-    targetPos = targetPos + Vector3.new(0, 80, 0)
+    -- Поднимаемся на 80 единиц по Y
+    local targetPos = targetCFrame.Position + Vector3.new(0, 80, 0)
+    local targetCF = CFrame.new(targetPos, targetCFrame.Position) -- смотрим на модель с высоты
+
     local tweenService = game:GetService("TweenService")
     local distance = (humanoidRootPart.Position - targetPos).Magnitude
     local tweenInfo = TweenInfo.new(distance / 300, Enum.EasingStyle.Linear)
 
-    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCF})
     tween:Play()
 
     tween.Completed:Connect(function()
