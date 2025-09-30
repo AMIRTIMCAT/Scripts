@@ -6,7 +6,12 @@ local Window = Library:MakeWindow({
   ScriptFolder = "redz-library-V5"
 })
 
-local Tab = Window:MakeTab({
-  Title = "Main",
-  Icon = "Home"
+MainTab:AddDiscordInvite({
+	Title = "Catzik Hub",
+	Description = "A community for Catzik Hub Users -- official scripts, updates, and suport in one place.",
+	Banner = "rbxassetid://17382040552", -- You can put an RGB Color: Color3.fromRGB(233, 37, 69)
+	Logo = "rbxassetid://17382040552",
+	Invite = "https://discord.gg/catzik-hub",
+	Members = 470000, -- Optional
+	Online = 20000, -- Optional
 })
