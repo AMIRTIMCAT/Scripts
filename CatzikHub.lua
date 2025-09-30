@@ -8,7 +8,7 @@ local Window = Library:MakeWindow({
 
 local Tab = Window:MakeTab({
   Title = "Teleport",
-  Icon = "Croissant"
+  Icon = "Car"
 })
 
 Tab:AddButton({
