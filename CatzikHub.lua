@@ -1,14 +1,14 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
 
 local Window = Library:MakeWindow({
-  Title = "My Cool Hub",
-  SubTitle = "by me",
-  ScriptFolder = "my-scripts"
+  Title = "Catzik Hub",
+  SubTitle = "by Yoshi",
+  ScriptFolder = "Catzik-Hub-V5"
 })
 
 local Tab = Window:MakeTab({
-  Title = "Main",
-  Icon = "Home"
+  Title = "Teleport",
+  Icon = "Croissant"
 })
 
 Tab:AddButton({
