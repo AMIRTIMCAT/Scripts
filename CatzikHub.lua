@@ -211,18 +211,12 @@ FruitTab:AddToggle({
                 local TweenService = game:GetService("TweenService")
 
                 while autoCollectFruit do
-                    local fruitFolder = workspace:FindFirstChild("Fruit")
-                    if not fruitFolder then
-                        print("Папка Fruit не найдена")
-                        break
-                    end
-
                     for _, fruitName in ipairs(fruitNames) do
                         if not autoCollectFruit then break end
-                        local fruitModel = fruitFolder:FindFirstChild(fruitName)
-                        if fruitModel and fruitModel:IsA("Model") then
+                        local fruit = workspace:FindFirstChild(fruitName)
+                        if fruit and fruit:IsA("Model") then
                             local basePart = nil
-                            for _, part in ipairs(fruitModel:GetChildren()) do
+                            for _, part in ipairs(fruit:GetChildren()) do
                                 if part:IsA("BasePart") then
                                     basePart = part
                                     break
@@ -260,6 +254,7 @@ FruitTab:AddToggle({
         end
     end
 })
+
 
 -- VISUAL TAB
 local VisualTab = Window:MakeTab({
