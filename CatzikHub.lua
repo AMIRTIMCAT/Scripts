@@ -9,7 +9,7 @@ local Window = Library:MakeWindow({
 -- TELEPORT TAB
 local TeleportTab = Window:MakeTab({
     Title = "Teleport",
-    Icon = "Car"
+    Icon = "History"
 })
 
 local function getCFrameForPlace(name)
@@ -120,7 +120,7 @@ local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 
 FarmTab:AddToggle({
-    Name = "Auto Chest [ Tween ]",
+    Name = "Auto Chest Tween [BETA]",
     Default = false,
     Callback = function(value)
         autoChest = value
