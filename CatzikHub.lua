@@ -10,31 +10,18 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- 🧱 Noclip
+-- Noclip
 local function setNoclip(state)
-    for _, part in pairs(character:GetChildren()) do
+    for _, part in pairs(character:GetDescendants()) do
         if part:IsA("BasePart") then
             part.CanCollide = not state
         end
     end
 end
 
--- 📍 Получение позиции модели
-local function getCFrameForPlace(name)
-    local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then return nil end
-    local model = mapFolder:FindFirstChild(name)
-    if not model then return nil end
-    local part = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-    if not part then return nil end
-    return part.CFrame
-end
-
--- 🚀 Tween-перемещение
+-- Tween перемещение
 local function tweenToPosition(targetCFrame)
-    local character = game.Players.LocalPlayer.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local hrp = humanoidRootPart
     if not hrp then return end
 
     local tweenService = game:GetService("TweenService")
@@ -44,117 +31,100 @@ local function tweenToPosition(targetCFrame)
     local raised = targetCFrame + Vector3.new(0, 80, 0)
     local tween = tweenService:Create(hrp, tweenInfo, {CFrame = raised})
 
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
-
+    setNoclip(true)
     tween:Play()
     tween.Completed:Wait()
-
-    -- ❌ отключение noclip
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
+    setNoclip(false)
 end
 
--- 📦 Teleport Tab
+-- Teleport Tab
 local TabTeleport = Window:MakeTab({
     Title = "Teleport",
     Icon = "Car"
 })
 
--- 📄 Получение всех зон
-local options = {}
-local function updateOptions()
-    options = {}
+local teleportOptions = {}
+local function updateTeleportOptions()
+    teleportOptions = {}
     local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then return end
     for _, model in ipairs(mapFolder:GetChildren()) do
         if model:IsA("Model") then
             local hasPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
             if hasPart then
-                table.insert(options, model.Name)
+                table.insert(teleportOptions, model.Name)
             end
         end
     end
 end
-updateOptions()
+updateTeleportOptions()
 
-local selectedPlace = options[1]
+local selectedPlace = teleportOptions[1]
 
--- 🔽 Dropdown
 TabTeleport:AddDropdown({
     Name = "Select Location",
-    Options = options,
+    Options = teleportOptions,
     Default = selectedPlace,
     Callback = function(value)
         selectedPlace = value
     end
 })
 
--- 🔘 Teleport Button
 TabTeleport:AddButton({
     Name = "Teleport",
     Callback = function()
-        if not selectedPlace then return end
-        local targetCFrame = getCFrameForPlace(selectedPlace)
-        if not targetCFrame then return end
+        local mapFolder = workspace:FindFirstChild("Map")
+        if not mapFolder then return end
+        local model = mapFolder:FindFirstChild(selectedPlace)
+        if not model then return end
+        local part = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        if not part then return end
 
-        Window:Notify({
-            Title = "Телепорт",
-            Content = "Начинаю телепорт к " .. selectedPlace,
-            Duration = 3
-        })
-
-        tweenToPosition(targetCFrame)
-
-        Window:Notify({
-            Title = "Телепорт",
-            Content = "Успешно телепортирован в " .. selectedPlace,
-            Duration = 3
-        })
+        tweenToPosition(part.CFrame)
     end
 })
 
--- 🌾 Farm Tab
+-- Farm Tab
 local TabFarm = Window:MakeTab({
     Title = "Farm",
     Icon = "Home"
 })
 
 local autoChest = false
-local chests = {"Chest1", "Chest2", "Chest3"}
 
--- 📍 Получить CFrame сундуков
-local function getChestCFrame(name)
+-- Получить все CFrame сундуков из всех Map.Модель.Chests
+local function getAllChestCFrames()
+    local cframes = {}
     local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then return nil end
-    local chestModel = mapFolder:FindFirstChild(name)
-    if not chestModel then return nil end
-    local part = chestModel:FindFirstChild("HumanoidRootPart") or chestModel:FindFirstChildWhichIsA("BasePart")
-    if not part then return nil end
-    return part.CFrame
+    if not mapFolder then return cframes end
+
+    for _, areaModel in ipairs(mapFolder:GetChildren()) do
+        if areaModel:IsA("Model") then
+            local chestsFolder = areaModel:FindFirstChild("Chests")
+            if chestsFolder and chestsFolder:IsA("Folder") then
+                for _, chest in ipairs(chestsFolder:GetChildren()) do
+                    if chest:IsA("Model") then
+                        local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            table.insert(cframes, part.CFrame)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return cframes
 end
 
--- 🔁 Фарм
+-- Цикл авто-честа
 task.spawn(function()
     while true do
         if autoChest then
-            for _, name in ipairs(chests) do
+            local chests = getAllChestCFrames()
+            for _, cframe in ipairs(chests) do
                 if not autoChest then break end
-                local cf = getChestCFrame(name)
-                if cf then
-                    Window:Notify({
-                        Title = "Auto Chest",
-                        Content = "Лечу к " .. name,
-                        Duration = 2
-                    })
-                    tweenToPosition(cf)
-                end
+                tweenToPosition(cframe)
                 task.wait(0.3)
             end
         end
@@ -162,16 +132,10 @@ task.spawn(function()
     end
 end)
 
--- ✅ Переключатель
 TabFarm:AddToggle({
     Name = "Auto Chest [ Tween ]",
     Default = false,
     Callback = function(state)
         autoChest = state
-        Window:Notify({
-            Title = "Auto Chest",
-            Content = state and "Включён" or "Выключен",
-            Duration = 2
-        })
     end
 })
