@@ -22,7 +22,7 @@ end
 -- Tween перемещение
 local function tweenToPosition(targetCFrame)
     local hrp = humanoidRootPart
-    if not hrp then print("HumanoidRootPart not found!") return end
+    if not hrp then return end
 
     local tweenService = game:GetService("TweenService")
     local distance = (hrp.Position - targetCFrame.Position).Magnitude
@@ -31,12 +31,10 @@ local function tweenToPosition(targetCFrame)
     local raised = targetCFrame + Vector3.new(0, 80, 0)
     local tween = tweenService:Create(hrp, tweenInfo, {CFrame = raised})
 
-    print("[Tween] Start to position:", raised.Position)
     setNoclip(true)
     tween:Play()
     tween.Completed:Wait()
     setNoclip(false)
-    print("[Tween] Completed")
 end
 
 -- Teleport Tab
@@ -50,7 +48,7 @@ local function updateTeleportOptions()
     teleportOptions = {}
     local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then
-        print("[Error] Map folder not found in workspace")
+        print("[Teleport] Map folder not found")
         return
     end
     for _, model in ipairs(mapFolder:GetChildren()) do
@@ -80,17 +78,17 @@ TabTeleport:AddButton({
     Callback = function()
         local mapFolder = workspace:FindFirstChild("Map")
         if not mapFolder then
-            print("[Teleport Error] Map folder not found")
+            print("[Teleport Error] Map not found")
             return
         end
         local model = mapFolder:FindFirstChild(selectedPlace)
         if not model then
-            print("[Teleport Error] Selected model not found:", selectedPlace)
+            print("[Teleport Error] Model not found:", selectedPlace)
             return
         end
         local part = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
         if not part then
-            print("[Teleport Error] No usable part in model:", selectedPlace)
+            print("[Teleport Error] No valid part found in model")
             return
         end
 
@@ -105,34 +103,27 @@ local TabFarm = Window:MakeTab({
 })
 
 local autoChest = false
+local lastLogTime = 0
 
 -- Получить все CFrame сундуков из всех Map.Модель.Chests
 local function getAllChestCFrames()
     local cframes = {}
     local mapFolder = workspace:FindFirstChild("Map")
     if not mapFolder then
-        print("[AutoChest] Map folder not found!")
         return cframes
     end
 
     for _, areaModel in ipairs(mapFolder:GetChildren()) do
         if areaModel:IsA("Model") then
             local chestsFolder = areaModel:FindFirstChild("Chests")
-            if not chestsFolder then
-                print("[AutoChest] No 'Chests' folder in:", areaModel.Name)
-                continue
-            end
-            for _, chest in ipairs(chestsFolder:GetChildren()) do
-                if chest:IsA("Model") then
-                    local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
-                    if part then
-                        print("[AutoChest] Found chest:", chest.Name, "in", areaModel.Name)
-                        table.insert(cframes, part.CFrame)
-                    else
-                        print("[AutoChest] Chest has no usable part:", chest.Name)
+            if chestsFolder and chestsFolder:IsA("Folder") then
+                for _, chest in ipairs(chestsFolder:GetChildren()) do
+                    if chest:IsA("Model") then
+                        local part = chest:FindFirstChild("HumanoidRootPart") or chest:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            table.insert(cframes, part.CFrame)
+                        end
                     end
-                else
-                    print("[AutoChest] Non-model inside Chests folder:", chest.Name)
                 end
             end
         end
@@ -146,9 +137,16 @@ task.spawn(function()
     while true do
         if autoChest then
             local chests = getAllChestCFrames()
-            if #chests == 0 then
-                print("[AutoChest] No chests found!")
+
+            if tick() - lastLogTime >= 10 then
+                if #chests == 0 then
+                    print("[AutoChest] ❌ No chests found.")
+                else
+                    print("[AutoChest] ✅ Found", #chests, "chests.")
+                end
+                lastLogTime = tick()
             end
+
             for _, cframe in ipairs(chests) do
                 if not autoChest then break end
                 tweenToPosition(cframe)
