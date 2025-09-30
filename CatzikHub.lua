@@ -27,23 +27,16 @@ local function tweenToPosition(targetCFrame)
     local tweenService = game:GetService("TweenService")
     local targetPosition = targetCFrame.Position
 
-    -- Позиция чуть перед сундуком (сдвиг по Z вперед относительно сундука)
-    local approachOffset = Vector3.new(0, 5, -3)  -- 5 вверх, 3 назад по Z, чтобы не застрять в сундуке
-
-    local destination = CFrame.new(targetPosition + approachOffset)
-
-    local distance = (hrp.Position - destination.Position).Magnitude
+    local distance = (hrp.Position - targetPosition).Magnitude
     local speed = 300
     local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
 
-    local tween = tweenService:Create(hrp, tweenInfo, {CFrame = destination})
-
-    setNoclip(true)
+    setNoclip(true)  -- включаем noclip перед полётом
+    local tween = tweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
     tween:Play()
     tween.Completed:Wait()
-    setNoclip(false)
+    setNoclip(false) -- отключаем noclip после полёта
 end
-
 
 -- Teleport Tab
 local TabTeleport = Window:MakeTab({
