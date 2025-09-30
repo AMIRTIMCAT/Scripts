@@ -2,8 +2,6 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlred
 
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
@@ -14,107 +12,121 @@ local Window = Library:MakeWindow({
     ScriptFolder = "Catzik-Hub-V5"
 })
 
--- Noclip управление
+-- Функция noclip
 local noclipEnabled = false
 local function setNoclip(state)
     noclipEnabled = state
 end
-RunService.Stepped:Connect(function()
-    if noclipEnabled and character then
+
+game:GetService("RunService").Stepped:Connect(function()
+    if noclipEnabled then
         for _, part in ipairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
     else
-        if character then
-            for _, part in ipairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
             end
         end
     end
 end)
 
--- Вкладка Teleport
+-- Функция для телепорта с Tween и noclip
+local function tweenToPosition(targetCFrame, speed)
+    local hrp = humanoidRootPart
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+    setNoclip(true)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    tween.Completed:Wait()
+    setNoclip(false)
+end
+
+-- ========== TELEPORT TAB ==========
 local TeleportTab = Window:MakeTab({
     Title = "Teleport",
     Icon = "Car"
 })
 
+-- Обновление списка мест из workspace.Map
 local function getMapModels()
     local mapFolder = workspace:FindFirstChild("Map")
+    if not mapFolder then return {} end
     local models = {}
-    if mapFolder then
-        for _, model in ipairs(mapFolder:GetChildren()) do
-            if model:IsA("Model") then
-                table.insert(models, model.Name)
-            end
+    for _, model in ipairs(mapFolder:GetChildren()) do
+        if model:IsA("Model") then
+            table.insert(models, model.Name)
         end
     end
     return models
 end
 
-local selectedModelName = nil
+local selectedPlace = nil
+local comboBoxOptions = getMapModels()
 
 local comboBox = TeleportTab:AddDropdown({
-    Name = "Select Map Model",
-    Options = getMapModels(),
-    Default = nil,
-    MultiSelect = false,
+    Name = "Select Place",
+    Options = comboBoxOptions,
+    Default = comboBoxOptions[1],
     Callback = function(value)
-        selectedModelName = value
+        selectedPlace = value
     end
 })
 
 TeleportTab:AddButton({
     Name = "Teleport",
     Callback = function()
-        if not selectedModelName then
-            print("Выберите модель для телепорта!")
+        if not selectedPlace then
+            print("Выберите место для телепорта!")
             return
         end
-
         local mapFolder = workspace:FindFirstChild("Map")
         if not mapFolder then
-            print("Папка 'Map' не найдена!")
+            print("Папка Map не найдена!")
             return
         end
-
-        local model = mapFolder:FindFirstChild(selectedModelName)
+        local model = mapFolder:FindFirstChild(selectedPlace)
         if not model then
-            print("Модель не найдена: "..selectedModelName)
+            print("Модель "..selectedPlace.." не найдена!")
             return
         end
-
         local basePart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
         if not basePart then
-            print("В модели нет подходящей части (HumanoidRootPart/BasePart)")
+            print("В модели нет части для телепортации!")
             return
         end
-
-        local targetCFrame = basePart.CFrame
-
-        local hrp = humanoidRootPart
-        local distance = (hrp.Position - targetCFrame.Position).Magnitude
-        local speed = 300
-        local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
-        
-        setNoclip(true)
-        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
-        tween:Play()
-        tween.Completed:Wait()
-        setNoclip(false)
-        
-        print("Телепорт выполнен к "..selectedModelName)
+        -- Летим на 80 единиц выше модели
+        local targetCFrame = basePart.CFrame + Vector3.new(0, 80, 0)
+        tweenToPosition(targetCFrame, 300)
     end
 })
 
--- Вкладка Farm
+-- ========== FARM TAB ==========
 local FarmTab = Window:MakeTab({
     Title = "Farm",
     Icon = "Home"
+})
+
+-- UI Scale slider сверху
+FarmTab:AddSlider({
+    Name = "UI Scale",
+    Min = 0.5,
+    Max = 2.0,
+    Default = 1,
+    Increment = 0.05,
+    Callback = function(value)
+        -- Создаём или меняем UIScale у окна
+        local uiScale = Window.Main:FindFirstChildOfClass("UIScale")
+        if not uiScale then
+            uiScale = Instance.new("UIScale")
+            uiScale.Parent = Window.Main
+        end
+        uiScale.Scale = value
+    end
 })
 
 local autoChestEnabled = false
@@ -142,19 +154,10 @@ FarmTab:AddToggle({
                             continue
                         end
                         local aboveCFrame = basePart.CFrame + Vector3.new(0, 10, 0)
-                        local hrp = humanoidRootPart
-                        local distance = (hrp.Position - aboveCFrame.Position).Magnitude
-                        local speed = 300
-                        local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
-
-                        setNoclip(true)
-                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = aboveCFrame})
-                        tween:Play()
-                        tween.Completed:Wait()
-                        setNoclip(false)
-
+                        tweenToPosition(aboveCFrame, 300)
                         print("Подлетели над сундуком: "..chest.Name)
 
+                        -- Ждём пока сундук будет удалён (собран)
                         while chest.Parent and autoChestEnabled do
                             wait(0.5)
                         end
@@ -177,23 +180,25 @@ FarmTab:AddToggle({
     end
 })
 
--- Вкладка Fruit
+-- ========== FRUIT TAB ==========
 local FruitTab = Window:MakeTab({
     Title = "Fruit",
-    Icon = "Cherry"  -- иконка в библиотеке должна быть "Cherry"
+    Icon = "Cherry"
 })
 
-local autoFruitEnabled = false
-
 local fruitsList = {
-    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spike Fruit", "Kilo Fruit", "Smoke Fruit", "Spring Fruit",
-    "Sand Fruit", "Ice Fruit", "Flame Fruit", "Barrier Fruit", "Bomb Fruit", "Falcon Fruit", "Rubber Fruit",
-    "Love Fruit", "Light Fruit", "Dark Fruit", "Quake Fruit", "Paw Fruit", "Diamond Fruit", "Buddha Fruit",
-    "Magma Fruit", "Door Fruit", "Rift Fruit", "Gravity Fruit", "Soul Fruit", "TRex Fruit", "Kitsune Fruit",
-    "Sound Fruit", "Mammoth Fruit", "Eagle Fruit", "Creation Fruit", "Yeti Fruit", "West Dragon Fruit",
-    "East Dragon Fruit", "Spirit Fruit", "Gas Fruit", "Pain Fruit", "Lightning Fruit", "Blizzard Fruit",
+    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spike Fruit", "Kilo Fruit",
+    "Smoke Fruit", "Spring Fruit", "Sand Fruit", "Ice Fruit", "Flame Fruit",
+    "Barrier Fruit", "Bomb Fruit", "Falcon Fruit", "Rubber Fruit", "Love Fruit",
+    "Light Fruit", "Dark Fruit", "Quake Fruit", "Paw Fruit", "Diamond Fruit",
+    "Buddha Fruit", "Magma Fruit", "Door Fruit", "Rift Fruit", "Gravity Fruit",
+    "Soul Fruit", "TRex Fruit", "Kitsune Fruit", "Sound Fruit", "Mammoth Fruit",
+    "Eagle Fruit", "Creation Fruit", "Yeti Fruit", "West Dragon Fruit", "East Dragon Fruit",
+    "Spirit Fruit", "Gas Fruit", "Pain Fruit", "Lightning Fruit", "Blizzard Fruit",
     "Control Fruit", "Venom Fruit", "Dragon Fruit", "Leopard Fruit", "Shadow Fruit"
 }
+
+local autoFruitEnabled = false
 
 FruitTab:AddToggle({
     Name = "Auto Collect Fruit",
@@ -202,54 +207,28 @@ FruitTab:AddToggle({
         autoFruitEnabled = value
         if autoFruitEnabled then
             spawn(function()
-                local fruitFolder = workspace:FindFirstChild("Fruit") or workspace
+                local fruitFolder = workspace:FindFirstChild("Fruit")
                 if not fruitFolder then
-                    print("Папка 'Fruit' не найдена!")
-                    autoFruitEnabled = false
+                    print("Папка Fruit не найдена")
                     return
                 end
-                
-                while autoFruitEnabled do
-                    for _, fruitName in ipairs(fruitsList) do
-                        if not autoFruitEnabled then break end
 
-                        local fruitModel = fruitFolder:FindFirstChild(fruitName)
-                        if fruitModel and fruitModel:IsA("Model") then
-                            local basePart = fruitModel:FindFirstChild("HumanoidRootPart") or fruitModel:FindFirstChildWhichIsA("BasePart")
+                while autoFruitEnabled do
+                    for _, fruit in ipairs(fruitFolder:GetChildren()) do
+                        if not autoFruitEnabled then break end
+                        if fruit:IsA("Model") and table.find(fruitsList, fruit.Name) then
+                            local basePart = fruit:FindFirstChild("HumanoidRootPart") or fruit:FindFirstChildWhichIsA("BasePart")
                             if not basePart then
-                                print("В фрукте нет подходящей части: "..fruitName)
+                                print("В фрукте нет части для телепортации: "..fruit.Name)
                                 continue
                             end
-
                             local aboveCFrame = basePart.CFrame + Vector3.new(0, 10, 0)
-                            local hrp = humanoidRootPart
-                            local distance = (hrp.Position - aboveCFrame.Position).Magnitude
-                            local speed = 300
-                            local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
-
-                            setNoclip(true)
-                            local tween = TweenService:Create(hrp, tweenInfo, {CFrame = aboveCFrame})
-                            tween:Play()
-                            tween.Completed:Wait()
-                            setNoclip(false)
-
-                            print("Подлетели к фрукту: "..fruitName)
-
-                            -- Ждём пока фрукт соберут (исчезнет)
-                            while fruitModel.Parent and autoFruitEnabled do
-                                wait(0.5)
-                            end
-
-                            if not autoFruitEnabled then
-                                print("Auto Collect Fruit выключен")
-                                break
-                            end
-
-                            print("Фрукт собран: "..fruitName)
+                            print("Летим к фрукту: "..fruit.Name)
+                            tweenToPosition(aboveCFrame, 300)
                             wait(0.5)
                         end
                     end
-                    wait(1) -- небольшая пауза между циклами
+                    wait(2)
                 end
             end)
         end
