@@ -262,6 +262,73 @@ FruitTab:AddToggle({
     end
 })
 
+-- VISUAL TAB
+local VisualTab = Window:MakeTab({
+    Title = "Visual",
+    Icon = "Eye"
+})
+
+local espEnabled = false
+local espObjects = {}
+
+local function createESP(player)
+    if player == game.Players.LocalPlayer then return end
+    if espObjects[player] then return end
+
+    local char = player.Character
+    if char then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESP_Highlight"
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = char
+        highlight.Parent = char
+        espObjects[player] = highlight
+    end
+end
+
+local function removeESP(player)
+    if espObjects[player] then
+        espObjects[player]:Destroy()
+        espObjects[player] = nil
+    end
+end
+
+local function updateESP()
+    while espEnabled do
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                if not espObjects[player] then
+                    createESP(player)
+                else
+                    espObjects[player].Adornee = player.Character
+                end
+            else
+                removeESP(player)
+            end
+        end
+        task.wait(1)
+    end
+end
+
+VisualTab:AddToggle({
+    Name = "ESP Players",
+    Default = false,
+    Callback = function(value)
+        espEnabled = value
+        if espEnabled then
+            updateESP()
+        else
+            for _, esp in pairs(espObjects) do
+                if esp then esp:Destroy() end
+            end
+            espObjects = {}
+        end
+    end
+})
+
 -- HOME TAB (для UI Scale)
 local HomeTab = Window:MakeTab({
     Title = "Home",
@@ -271,7 +338,6 @@ local HomeTab = Window:MakeTab({
 local uiScaleEnabled = false
 local uiScaleValue = 1.0
 
--- Инициализируем UI Scale в библиотеке
 Library:SetUIScale(uiScaleValue)
 
 HomeTab:AddToggle({
@@ -282,7 +348,7 @@ HomeTab:AddToggle({
         if uiScaleEnabled then
             Library:SetUIScale(uiScaleValue)
         else
-            Library:SetUIScale(1.0) -- отключаем масштабирование, сброс
+            Library:SetUIScale(1.0)
         end
     end
 })
@@ -302,6 +368,5 @@ HomeTab:AddSlider({
 })
 
 print(string.format("UI Max Scale is: %s and the minimum is: %s", Library:GetMaxScale(), Library:GetMinScale()))
-
 
 return Window
