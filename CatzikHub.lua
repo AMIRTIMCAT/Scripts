@@ -269,37 +269,39 @@ local HomeTab = Window:MakeTab({
 })
 
 local uiScaleEnabled = false
-local uiScaleValue = 1
+local uiScaleValue = 1.0
 
-local uiScaleInstance = Instance.new("UIScale")
-uiScaleInstance.Parent = Window.Main
-uiScaleInstance.Scale = 1
-uiScaleInstance.Enabled = false
+-- Инициализируем UI Scale в библиотеке
+Library:SetUIScale(uiScaleValue)
 
 HomeTab:AddToggle({
     Name = "Enable UI Scale",
     Default = false,
     Callback = function(value)
         uiScaleEnabled = value
-        uiScaleInstance.Enabled = uiScaleEnabled
         if uiScaleEnabled then
-            uiScaleInstance.Scale = uiScaleValue
+            Library:SetUIScale(uiScaleValue)
+        else
+            Library:SetUIScale(1.0) -- отключаем масштабирование, сброс
         end
     end
 })
 
 HomeTab:AddSlider({
     Name = "UI Scale",
-    Min = 0.5,
-    Max = 2,
-    Default = 1,
+    Min = 0.6,
+    Max = 1.6,
+    Default = 1.0,
     Increment = 0.05,
     Callback = function(value)
         uiScaleValue = value
         if uiScaleEnabled then
-            uiScaleInstance.Scale = uiScaleValue
+            Library:SetUIScale(uiScaleValue)
         end
     end
 })
+
+print(string.format("UI Max Scale is: %s and the minimum is: %s", Library:GetMaxScale(), Library:GetMinScale()))
+
 
 return Window
