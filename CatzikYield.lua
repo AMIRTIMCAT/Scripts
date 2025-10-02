@@ -11,8 +11,7 @@ local Window = Library:MakeWindow({
 -- Вкладка: Main
 local MainTab = Window:MakeTab({
     Name = "Main",
-    Icon = "Home", -- Иконка по имени (если библиотека поддерживает это)
-    Color = Color3.fromRGB(255, 100, 100)
+    Icon = "Home",
 })
 
 -- Добавляем Discord Invite в MainTab
@@ -30,7 +29,6 @@ MainTab:AddDiscordInvite({
 local PlayerTab = Window:MakeTab({
     Name = "Player",
     Icon = "User", -- Можно заменить на подходящую иконку или ID
-    Color = Color3.fromRGB(100, 149, 255) -- Голубой оттенок
 })
 
 -- Пример: кнопка в PlayerTab
