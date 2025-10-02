@@ -8,14 +8,14 @@ local Window = Library:MakeWindow({
     ScriptFolder = "CatikYield-library-V5"
 })
 
--- Создаём вкладку
+-- Вкладка: Main
 local MainTab = Window:MakeTab({
     Name = "Main",
-    Icon = "Home",
+    Icon = "Home", -- Иконка по имени (если библиотека поддерживает это)
     Color = Color3.fromRGB(255, 100, 100)
 })
 
--- Добавляем Discord Invite
+-- Добавляем Discord Invite в MainTab
 MainTab:AddDiscordInvite({
     Title = "Catik Yield | Community",
     Description = "Catik Yield.",
@@ -24,4 +24,36 @@ MainTab:AddDiscordInvite({
     Invite = "https://discord.gg/Eg98P4wf2V",
     Members = 1488,
     Online = 1488
+})
+
+-- ✅ Вкладка: Player
+local PlayerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "User", -- Можно заменить на подходящую иконку или ID
+    Color = Color3.fromRGB(100, 149, 255) -- Голубой оттенок
+})
+
+-- Пример: кнопка в PlayerTab
+PlayerTab:AddButton({
+    Name = "Установить скорость 100",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 100
+        end
+    end
+})
+
+-- Пример: слайдер для изменения скорости
+PlayerTab:AddSlider({
+    Name = "Скорость игрока",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Callback = function(value)
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+        end
+    end
 })
