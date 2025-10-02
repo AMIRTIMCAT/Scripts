@@ -47,7 +47,10 @@ local State = {
     HitboxTarget = "",
     HitboxSize = 1,
     HitboxTransparency = 0.4,
-    StareTarget = ""
+    StareTarget = "",
+    AutoKeyPress = "",
+    AutoKeyPressEnabled = false,
+    TeleportTarget = ""
 }
 
 -- Вспомогательные функции из Infinite Yield
@@ -99,36 +102,13 @@ end
 LocalPlayer.CharacterAdded:Connect(function()
     wait(0.1)
     applyWalkJump()
-    if State.Noclip then
-        enableNoclip()
-    else
-        disableNoclip()
-    end
-    if State.FlyEnabled then
-        enableFly()
-    else
-        disableFly()
-    end
-    if State.SpinEnabled then
-        enableSpin()
-    else
-        disableSpin()
-    end
-    if State.XrayEnabled then
-        enableXray()
-    else
-        disableXray()
-    end
-    if State.WallTpEnabled then
-        enableWallTp()
-    else
-        disableWallTp()
-    end
-    if State.AutoClickEnabled then
-        enableAutoClick()
-    else
-        disableAutoClick()
-    end
+    if State.Noclip then enableNoclip() else disableNoclip() end
+    if State.FlyEnabled then enableFly() else disableFly() end
+    if State.SpinEnabled then enableSpin() else disableSpin() end
+    if State.XrayEnabled then enableXray() else disableXray() end
+    if State.WallTpEnabled then enableWallTp() else disableWallTp() end
+    if State.AutoClickEnabled then enableAutoClick() else disableAutoClick() end
+    if State.AutoKeyPressEnabled then enableAutoKeyPress() else disableAutoKeyPress() end
 end)
 
 -- WalkSpeed
@@ -142,6 +122,14 @@ PlayerTab:AddSlider({
         applyWalkJump()
     end
 })
+PlayerTab:AddButton({
+    Name = "Reset WalkSpeed",
+    Callback = function()
+        State.WalkSpeed = 16
+        applyWalkJump()
+        Library:Notify("WalkSpeed", "Reset to 16")
+    end
+})
 
 -- JumpPower
 PlayerTab:AddSlider({
@@ -152,6 +140,14 @@ PlayerTab:AddSlider({
     Callback = function(value)
         State.JumpPower = value
         applyWalkJump()
+    end
+})
+PlayerTab:AddButton({
+    Name = "Reset JumpPower",
+    Callback = function()
+        State.JumpPower = 50
+        applyWalkJump()
+        Library:Notify("JumpPower", "Reset to 50")
     end
 })
 
@@ -191,45 +187,39 @@ PlayerTab:AddToggle({
     Default = State.Noclip,
     Callback = function(state)
         State.Noclip = state
-        if state then
-            enableNoclip()
-        else
-            disableNoclip()
-        end
+        if state then enableNoclip() else disableNoclip() end
     end
 })
 
--- Fly (оставлено без изменений, предполагается, что функция уже реализована)
--- Замените этот блок, если у вас есть конкретная реализация fly
+-- Fly
 local flyConnection = nil
+local flyVelocity = nil
 local function enableFly()
     if flyConnection then return end
-    -- Реализация полета (пример, замените на вашу)
+    local char, humanoid, root = getCharacterParts()
+    if not (char and humanoid and root) then return end
+    humanoid.PlatformStand = true
+    flyVelocity = Instance.new("BodyVelocity")
+    flyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    flyVelocity.Parent = root
     flyConnection = RunService.RenderStepped:Connect(function()
-        local char, humanoid, root = getCharacterParts()
-        if char and humanoid and root then
-            humanoid.PlatformStand = true
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Пример
-            bodyVelocity.Parent = root
-        end
+        local moveDirection = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + root.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - root.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - root.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + root.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
+        flyVelocity.Velocity = moveDirection.Unit * 50
     end)
 end
 
 local function disableFly()
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+    if flyVelocity then flyVelocity:Destroy() flyVelocity = nil end
     local char, humanoid = getCharacterParts()
     if char and humanoid then
         humanoid.PlatformStand = false
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BodyVelocity") then
-                v:Destroy()
-            end
-        end
     end
 end
 
@@ -238,11 +228,7 @@ PlayerTab:AddToggle({
     Default = State.FlyEnabled,
     Callback = function(state)
         State.FlyEnabled = state
-        if state then
-            enableFly()
-        else
-            disableFly()
-        end
+        if state then enableFly() else disableFly() end
     end
 })
 
@@ -250,7 +236,7 @@ PlayerTab:AddToggle({
 local spinConnection = nil
 local function enableSpin()
     if spinConnection then return end
-    local char, _, root = getCharacterParts()
+    local _, _, root = getCharacterParts()
     if root then
         spinConnection = RunService.RenderStepped:Connect(function()
             local spin = Instance.new("BodyAngularVelocity")
@@ -267,12 +253,10 @@ local function disableSpin()
         spinConnection:Disconnect()
         spinConnection = nil
     end
-    local char, _, root = getCharacterParts()
+    local _, _, root = getCharacterParts()
     if root then
         for _, v in pairs(root:GetChildren()) do
-            if v.Name == "Spinning" then
-                v:Destroy()
-            end
+            if v.Name == "Spinning" then v:Destroy() end
         end
     end
 end
@@ -282,11 +266,7 @@ PlayerTab:AddToggle({
     Default = State.SpinEnabled,
     Callback = function(state)
         State.SpinEnabled = state
-        if state then
-            enableSpin()
-        else
-            disableSpin()
-        end
+        if state then enableSpin() else disableSpin() end
     end
 })
 
@@ -306,12 +286,14 @@ PlayerTab:AddSlider({
 
 -- Xray
 local xrayConnection = nil
+local xrayParts = {}
 local function enableXray()
     if xrayConnection then return end
     xrayConnection = RunService.RenderStepped:Connect(function()
         for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("BasePart") and not v.Parent:FindFirstChildWhichIsA("Humanoid") and not v.Parent.Parent:FindFirstChildWhichIsA("Humanoid") then
+            if v:IsA("BasePart") and not v.Parent:FindFirstChildWhichIsA("Humanoid") and not v.Parent.Parent:FindFirstChildWhichIsA("Humanoid") and not table.find(xrayParts, v) then
                 v.LocalTransparencyModifier = 0.5
+                table.insert(xrayParts, v)
             end
         end
     end)
@@ -322,11 +304,10 @@ local function disableXray()
         xrayConnection:Disconnect()
         xrayConnection = nil
     end
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and not v.Parent:FindFirstChildWhichIsA("Humanoid") and not v.Parent.Parent:FindFirstChildWhichIsA("Humanoid") then
-            v.LocalTransparencyModifier = 0
-        end
+    for _, v in pairs(xrayParts) do
+        if v and v.Parent then v.LocalTransparencyModifier = 0 end
     end
+    xrayParts = {}
 end
 
 MainTab:AddToggle({
@@ -334,11 +315,7 @@ MainTab:AddToggle({
     Default = State.XrayEnabled,
     Callback = function(state)
         State.XrayEnabled = state
-        if state then
-            enableXray()
-        else
-            disableXray()
-        end
+        if state then enableXray() else disableXray() end
     end
 })
 
@@ -354,9 +331,9 @@ local function enableWallTp()
             if hit:IsA("BasePart") and root and humanoid and hit.Position.Y > root.Position.Y - humanoid.HipHeight then
                 local hitP = getRoot(hit.Parent)
                 if hitP then
-                    root.CFrame = hit.CFrame * CFrame.new(root.CFrame.lookVector.X, hitP.Size.Z/2 + humanoid.HipHeight, root.CFrame.lookVector.Z)
+                    root.CFrame = hit.CFrame * CFrame.new(root.CFrame.LookVector.X, hitP.Size.Z/2 + humanoid.HipHeight, root.CFrame.LookVector.Z)
                 else
-                    root.CFrame = hit.CFrame * CFrame.new(root.CFrame.lookVector.X, hit.Size.Y/2 + humanoid.HipHeight, root.CFrame.lookVector.Z)
+                    root.CFrame = hit.CFrame * CFrame.new(root.CFrame.LookVector.X, hit.Size.Y/2 + humanoid.HipHeight, root.CFrame.LookVector.Z)
                 end
             end
         end)
@@ -375,11 +352,7 @@ PlayerTab:AddToggle({
     Default = State.WallTpEnabled,
     Callback = function(state)
         State.WallTpEnabled = state
-        if state then
-            enableWallTp()
-        else
-            disableWallTp()
-        end
+        if state then enableWallTp() else disableWallTp() end
     end
 })
 
@@ -389,7 +362,7 @@ local cancelAutoClick = nil
 local function enableAutoClick()
     if autoclickConnection then return end
     if not (mouse1press and mouse1release) then
-        Library:Notify("Auto Clicker", "Your exploit doesn't support this feature (missing mouse1press/mouse1release)")
+        Library:Notify("Auto Clicker", "Your exploit doesn't support this (missing mouse1press/mouse1release)")
         State.AutoClickEnabled = false
         return
     end
@@ -400,13 +373,13 @@ local function enableAutoClick()
                 disableAutoClick()
             end
         end)
-        Library:Notify("Auto Clicker", "Press [backspace] and [=] to stop")
-        repeat
+        Library:Notify("Auto Clicker", "Press [backspace] + [=] to stop")
+        while State.AutoClickEnabled do
             mouse1press()
             wait(0.1)
             mouse1release()
             wait(0.1)
-        until not State.AutoClickEnabled
+        end
     end)
 end
 
@@ -426,11 +399,7 @@ PlayerTab:AddToggle({
     Default = State.AutoClickEnabled,
     Callback = function(state)
         State.AutoClickEnabled = state
-        if state then
-            enableAutoClick()
-        else
-            disableAutoClick()
-        end
+        if state then enableAutoClick() else disableAutoClick() end
     end
 })
 
@@ -522,6 +491,7 @@ PlayerTab:AddTextbox({
     PlaceholderText = "Enter player name",
     Callback = function(value)
         State.StareTarget = value
+        if State.StareTarget ~= "" and not stareConnection then enableStare() end
     end
 })
 
@@ -529,19 +499,21 @@ local stareConnection = nil
 local function enableStare()
     if stareConnection then return end
     local players = getPlayer(State.StareTarget, LocalPlayer)
-    for _, v in pairs(players) do
-        stareConnection = RunService.RenderStepped:Connect(function()
-            if LocalPlayer.Character and Players[v] and Players[v].Character and Players[v].Character:FindFirstChild("HumanoidRootPart") then
-                local chrPos = LocalPlayer.Character.PrimaryPart.Position
-                local tPos = Players[v].Character:FindFirstChild("HumanoidRootPart").Position
-                local modTPos = Vector3.new(tPos.X, chrPos.Y, tPos.Z)
-                local newCF = CFrame.new(chrPos, modTPos)
-                LocalPlayer.Character:SetPrimaryPartCFrame(newCF)
-            else
-                disableStare()
-            end
-        end)
+    if #players == 0 then
+        Library:Notify("StareAt", "No player found")
+        return
     end
+    stareConnection = RunService.RenderStepped:Connect(function()
+        local targetPlayer = Players[players[1]]
+        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character then
+            local chrPos = LocalPlayer.Character.PrimaryPart.Position
+            local tPos = targetPlayer.Character.HumanoidRootPart.Position
+            local modTPos = Vector3.new(tPos.X, chrPos.Y, tPos.Z)
+            LocalPlayer.Character:SetPrimaryPartCFrame(CFrame.new(chrPos, modTPos))
+        else
+            disableStare()
+        end
+    end)
 end
 
 local function disableStare()
@@ -555,11 +527,7 @@ PlayerTab:AddToggle({
     Name = "StareAt",
     Default = false,
     Callback = function(state)
-        if state then
-            enableStare()
-        else
-            disableStare()
-        end
+        if state and State.StareTarget ~= "" then enableStare() else disableStare() end
     end
 })
 
@@ -578,11 +546,11 @@ MainTab:AddButton({
     Callback = function()
         if getnilinstances then
             for _, v in pairs(getnilinstances()) do
-                v:Destroy()
+                pcall(function() v:Destroy() end)
             end
             Library:Notify("Clear Nil Instances", "Nil instances cleared!")
         else
-            Library:Notify("Incompatible Exploit", "Your exploit does not support this command (missing getnilinstances)")
+            Library:Notify("Incompatible Exploit", "Missing getnilinstances")
         end
     end
 })
@@ -641,20 +609,17 @@ MainTab:AddButton({
     Name = "Fake Out",
     Callback = function()
         local root = getRoot(LocalPlayer.Character)
+        if not root then return end
         local oldpos = root.CFrame
         local orgDestroyHeight = workspace.FallenPartsDestroyHeight
         local antivoidWasEnabled = antivoidConnection ~= nil
-        if antivoidWasEnabled then
-            disableAntiVoid()
-        end
-        workspace.FallenPartsDestroyHeight = 0/1/0
+        if antivoidWasEnabled then disableAntiVoid() end
+        workspace.FallenPartsDestroyHeight = 0/0/0 -- Invalid to disable
         root.CFrame = CFrame.new(Vector3.new(0, orgDestroyHeight - 25, 0))
         wait(1)
         root.CFrame = oldpos
         workspace.FallenPartsDestroyHeight = orgDestroyHeight
-        if antivoidWasEnabled then
-            enableAntiVoid()
-        end
+        if antivoidWasEnabled then enableAntiVoid() end
         Library:Notify("Fake Out", "Executed!")
     end
 })
@@ -678,17 +643,17 @@ MainTab:AddButton({
     Name = "Remove Ads",
     Callback = function()
         task.spawn(function()
+            local adParts = {}
             while true do
                 pcall(function()
                     for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("PackageLink") then
-                            if v.Parent:FindFirstChild("ADpart") or v.Parent:FindFirstChild("AdGuiAdornee") then
-                                v.Parent:Destroy()
-                            end
+                        if v:IsA("PackageLink") and (v.Parent:FindFirstChild("ADpart") or v.Parent:FindFirstChild("AdGuiAdornee")) and not table.find(adParts, v.Parent) then
+                            v.Parent:Destroy()
+                            table.insert(adParts, v.Parent)
                         end
                     end
                 end)
-                wait()
+                wait(1) -- Reduced frequency
             end
         end)
         Library:Notify("Remove Ads", "Ad removal started!")
@@ -715,7 +680,7 @@ PlayerTab:AddButton({
             local targetRoot = target and target.Character and getRoot(target.Character)
             if root and targetRoot and target ~= LocalPlayer then
                 local oldpos = root.CFrame
-                root.CFrame = targetRoot.CFrame + targetRoot.CFrame.lookVector * 2
+                root.CFrame = targetRoot.CFrame + targetRoot.CFrame.LookVector * 2
                 root.CFrame = CFrame.new(root.Position, targetRoot.Position)
                 wait(0.5)
                 root.CFrame = oldpos
@@ -797,12 +762,16 @@ local listentoConnection = nil
 local function enableListenTo()
     if listentoConnection then return end
     local player = Players:FindFirstChild(getPlayer(State.StareTarget, LocalPlayer)[1])
-    local root = player and player.Character and getRoot(player.Character)
+    if not player or not player.Character then
+        Library:Notify("Listen To", "Invalid target")
+        return
+    end
+    local root = getRoot(player.Character)
     if root then
         game:GetService("SoundService"):SetListener(Enum.ListenerType.ObjectPosition, root)
         listentoConnection = player.CharacterAdded:Connect(function()
-            repeat wait() until Players[player.Name].Character and getRoot(Players[player.Name].Character)
-            game:GetService("SoundService"):SetListener(Enum.ListenerType.ObjectPosition, getRoot(Players[player.Name].Character))
+            repeat wait() until player.Character and getRoot(player.Character)
+            game:GetService("SoundService"):SetListener(Enum.ListenerType.ObjectPosition, getRoot(player.Character))
         end)
         Library:Notify("Listen To", "Listening to " .. player.Name)
     end
@@ -821,11 +790,7 @@ PlayerTab:AddToggle({
     Name = "Listen To",
     Default = false,
     Callback = function(state)
-        if state then
-            enableListenTo()
-        else
-            disableListenTo()
-        end
+        if state then enableListenTo() else disableListenTo() end
     end
 })
 
@@ -835,7 +800,10 @@ PlayerTab:AddButton({
     Callback = function()
         local humanoid = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
         local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
-        if not humanoid or not backpack then return end
+        if not humanoid or not backpack then
+            Library:Notify("Jerk", "Failed: No humanoid or backpack")
+            return
+        end
         local tool = Instance.new("Tool")
         tool.Name = "Jerk Off"
         tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha, well. let's justr say. My peanits."
@@ -845,10 +813,7 @@ PlayerTab:AddButton({
         local track = nil
         local function stopTomfoolery()
             jorkin = false
-            if track then
-                track:Stop()
-                track = nil
-            end
+            if track then track:Stop() track = nil end
         end
         tool.Equipped:Connect(function() jorkin = true end)
         tool.Unequipped:Connect(stopTomfoolery)
@@ -867,10 +832,7 @@ PlayerTab:AddButton({
                 track.TimePosition = 0.6
                 wait(0.1)
                 while track and track.TimePosition < (not isR15 and 0.65 or 0.7) do wait(0.1) end
-                if track then
-                    track:Stop()
-                    track = nil
-                end
+                if track then track:Stop() track = nil end
             end
         end)
         Library:Notify("Jerk", "Jerk tool added!")
@@ -884,8 +846,12 @@ MainTab:AddSlider({
     Max = 2,
     Default = 1,
     Callback = function(value)
-        -- Предполагается, что библиотека redz-V5-remake поддерживает изменение масштаба
-        Library:Notify("Gui Scale", "Set to " .. value .. " (may require manual UI adjustment)")
+        -- Check if library supports scaling
+        if not pcall(function() Library:SetScale(value) end) then
+            Library:Notify("Gui Scale", "Scale change not supported by library")
+        else
+            Library:Notify("Gui Scale", "Set to " .. value)
+        end
     end
 })
 
@@ -894,12 +860,12 @@ MainTab:AddButton({
     Name = "Unsuspend Voice Chat",
     Callback = function()
         local VoiceChatService = game:GetService("VoiceChatService")
-        VoiceChatService:joinVoice()
+        pcall(function() VoiceChatService:joinVoice() end)
         local onVoiceModerated
         if not onVoiceModerated then
             onVoiceModerated = game:GetService("VoiceChatInternal").LocalPlayerModerated:Connect(function()
                 wait(1)
-                VoiceChatService:joinVoice()
+                pcall(function() VoiceChatService:joinVoice() end)
             end)
         end
         Library:Notify("Unsuspend Voice Chat", "Voice chat unsuspended!")
@@ -917,23 +883,12 @@ local function enableFreezeUa()
         "RightFoot", "LeftFoot", "Torso", "Right Arm", "Left Arm", "Right Leg", "Left Leg", "HumanoidRootPart"
     }
     local function freezeNoob(v)
-        if v:IsA("BasePart") or v:IsA("UnionOperation") and not v.Anchored then
+        if (v:IsA("BasePart") or v:IsA("UnionOperation")) and not v.Anchored then
             local isBad = false
-            for _, name in pairs(badnames) do
-                if v.Name == name then
-                    isBad = true
-                    break
-                end
-            end
-            if LocalPlayer.Character and v:IsDescendantOf(LocalPlayer.Character) then
-                isBad = true
-            end
+            for _, name in pairs(badnames) do if v.Name == name then isBad = true break end end
+            if LocalPlayer.Character and v:IsDescendantOf(LocalPlayer.Character) then isBad = true end
             if not isBad then
-                for _, c in pairs(v:GetChildren()) do
-                    if c:IsA("BodyPosition") or c:IsA("BodyGyro") then
-                        c:Destroy()
-                    end
-                end
+                for _, c in pairs(v:GetChildren()) do if c:IsA("BodyPosition") or c:IsA("BodyGyro") then c:Destroy() end end
                 local bodypos = Instance.new("BodyPosition")
                 bodypos.Parent = v
                 bodypos.Position = v.Position
@@ -942,15 +897,11 @@ local function enableFreezeUa()
                 bodygyro.Parent = v
                 bodygyro.CFrame = v.CFrame
                 bodygyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                if not table.find(frozenParts, v) then
-                    table.insert(frozenParts, v)
-                end
+                if not table.find(frozenParts, v) then table.insert(frozenParts, v) end
             end
         end
     end
-    for _, v in pairs(workspace:GetDescendants()) do
-        freezeNoob(v)
-    end
+    for _, v in pairs(workspace:GetDescendants()) do freezeNoob(v) end
     freezeUaConnection = workspace.DescendantAdded:Connect(freezeNoob)
 end
 
@@ -960,11 +911,7 @@ local function disableFreezeUa()
         freezeUaConnection = nil
     end
     for _, v in pairs(frozenParts) do
-        for _, c in pairs(v:GetChildren()) do
-            if c:IsA("BodyPosition") or c:IsA("BodyGyro") then
-                c:Destroy()
-            end
-        end
+        for _, c in pairs(v:GetChildren()) do if c:IsA("BodyPosition") or c:IsA("BodyGyro") then c:Destroy() end end
     end
     frozenParts = {}
 end
@@ -973,13 +920,8 @@ MainTab:AddToggle({
     Name = "Freeze Unanchored",
     Default = false,
     Callback = function(state)
-        if state then
-            enableFreezeUa()
-            Library:Notify("Freeze Unanchored", "Enabled")
-        else
-            disableFreezeUa()
-            Library:Notify("Freeze Unanchored", "Disabled")
-        end
+        if state then enableFreezeUa() else disableFreezeUa() end
+        Library:Notify("Freeze Unanchored", state and "Enabled" or "Disabled")
     end
 })
 
@@ -1001,24 +943,18 @@ MainTab:AddButton({
             local forces = {}
             for _, part in pairs(workspace:GetDescendants()) do
                 if (part:IsA("BasePart") or part:IsA("UnionOperation") or part:IsA("Model")) and not part.Anchored and not part:IsDescendantOf(LocalPlayer.Character) and not table.find({"Torso", "Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg", "HumanoidRootPart"}, part.Name) then
-                    for _, c in pairs(part:GetChildren()) do
-                        if c:IsA("BodyPosition") or c:IsA("BodyGyro") then
-                            c:Destroy()
-                        end
-                    end
+                    for _, c in pairs(part:GetChildren()) do if c:IsA("BodyPosition") or c:IsA("BodyGyro") then c:Destroy() end end
                     local forceInstance = Instance.new("BodyPosition")
                     forceInstance.Parent = part
                     forceInstance.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     table.insert(forces, forceInstance)
-                    if not table.find(frozenParts, part) then
-                        table.insert(frozenParts, part)
-                    end
+                    if not table.find(frozenParts, part) then table.insert(frozenParts, part) end
                 end
             end
             for _, c in pairs(forces) do
                 c.Position = Players[v].Character.Head.Position
             end
-            Library:Notify("Teleport Unanchored", "Teleported unanchored parts to " .. v)
+            Library:Notify("Teleport Unanchored", "Teleported to " .. v)
         end
     end
 })
@@ -1042,6 +978,49 @@ local keycodeMap = {
     ["f12"] = 0x7B
 }
 
+local autoKeyPressConnection = nil
+local cancelAutoKeyPress = nil
+local function enableAutoKeyPress()
+    if autoKeyPressConnection then return end
+    if not (keypress and keyrelease) then
+        Library:Notify("Auto Key Press", "Exploit missing keypress/keyrelease")
+        State.AutoKeyPressEnabled = false
+        return
+    end
+    local code = keycodeMap[string.lower(State.AutoKeyPress)]
+    if not code then
+        Library:Notify("Auto Key Press", "Invalid key")
+        State.AutoKeyPressEnabled = false
+        return
+    end
+    autoKeyPressConnection = RunService.RenderStepped:Connect(function()
+        cancelAutoKeyPress = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+            if not gameProcessedEvent and ((input.KeyCode == Enum.KeyCode.Backspace and UserInputService:IsKeyDown(Enum.KeyCode.Equals)) or (input.KeyCode == Enum.KeyCode.Equals and UserInputService:IsKeyDown(Enum.KeyCode.Backspace))) then
+                State.AutoKeyPressEnabled = false
+                disableAutoKeyPress()
+            end
+        end)
+        Library:Notify("Auto Key Press", "Press [backspace] + [=] to stop")
+        while State.AutoKeyPressEnabled do
+            keypress(code)
+            wait(0.1)
+            keyrelease(code)
+            wait(0.1)
+        end
+    end)
+end
+
+local function disableAutoKeyPress()
+    if autoKeyPressConnection then
+        autoKeyPressConnection:Disconnect()
+        autoKeyPressConnection = nil
+    end
+    if cancelAutoKeyPress then
+        cancelAutoKeyPress:Disconnect()
+        cancelAutoKeyPress = nil
+    end
+end
+
 PlayerTab:AddTextbox({
     Name = "Auto Key Press",
     Default = "",
@@ -1053,39 +1032,10 @@ PlayerTab:AddTextbox({
 
 PlayerTab:AddToggle({
     Name = "Auto Key Press",
-    Default = false,
+    Default = State.AutoKeyPressEnabled,
     Callback = function(state)
-        if state then
-            if not (keypress and keyrelease) then
-                Library:Notify("Auto Key Press", "Your exploit doesn't support this feature (missing keypress/keyrelease)")
-                return
-            end
-            local code = keycodeMap[string.lower(State.AutoKeyPress)]
-            if not code then
-                Library:Notify("Auto Key Press", "Invalid key")
-                return
-            end
-            task.spawn(function()
-                local cancelAutoKeyPress
-                cancelAutoKeyPress = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-                    if not gameProcessedEvent and ((input.KeyCode == Enum.KeyCode.Backspace and UserInputService:IsKeyDown(Enum.KeyCode.Equals)) or (input.KeyCode == Enum.KeyCode.Equals and UserInputService:IsKeyDown(Enum.KeyCode.Backspace))) then
-                        State.AutoKeyPressEnabled = false
-                        if cancelAutoKeyPress then cancelAutoKeyPress:Disconnect() end
-                    end
-                end)
-                Library:Notify("Auto Key Press", "Press [backspace] and [=] to stop")
-                while State.AutoKeyPressEnabled do
-                    keypress(code)
-                    wait(0.1)
-                    keyrelease(code)
-                    wait(0.1)
-                end
-            end)
-            State.AutoKeyPressEnabled = true
-        else
-            State.AutoKeyPressEnabled = false
-            Library:Notify("Auto Key Press", "Disabled")
-        end
+        State.AutoKeyPressEnabled = state
+        if state then enableAutoKeyPress() else disableAutoKeyPress() end
     end
 })
 
@@ -1118,10 +1068,10 @@ MainTab:AddToggle({
             if groupId and State.RolewatchRole then
                 rolewatchConnection = Players.PlayerAdded:Connect(function(player)
                     if player:IsInGroup(groupId) and string.lower(player:GetRoleInGroup(groupId)) == string.lower(State.RolewatchRole) then
-                        Library:Notify("Rolewatch", "Player \"" .. player.Name .. "\" has joined with the Role \"" .. State.RolewatchRole .. "\"")
+                        Library:Notify("Rolewatch", player.Name .. " joined with role " .. State.RolewatchRole)
                     end
                 end)
-                Library:Notify("Rolewatch", "Watching Group ID \"" .. groupId .. "\" for Role \"" .. State.RolewatchRole .. "\"")
+                Library:Notify("Rolewatch", "Watching Group " .. groupId .. " for " .. State.RolewatchRole)
             else
                 Library:Notify("Rolewatch", "Invalid Group ID or Role")
             end
@@ -1146,9 +1096,7 @@ local function getStaffRole(player)
         result.Staff = true
     end
     for _, role in pairs(staffRoles) do
-        if string.find(string.lower(playerRole), role) then
-            result.Staff = true
-        end
+        if string.find(string.lower(playerRole), role) then result.Staff = true end
     end
     return result
 end
@@ -1162,23 +1110,19 @@ MainTab:AddToggle({
                 local found = {}
                 staffwatchConnection = Players.PlayerAdded:Connect(function(player)
                     local result = getStaffRole(player)
-                    if result.Staff then
-                        Library:Notify("Staffwatch", player.Name .. " is a " .. result.Role)
-                    end
+                    if result.Staff then Library:Notify("Staffwatch", player.Name .. " is a " .. result.Role) end
                 end)
                 for _, player in pairs(Players:GetPlayers()) do
                     local result = getStaffRole(player)
-                    if result.Staff then
-                        table.insert(found, player.Name .. " is a " .. result.Role)
-                    end
+                    if result.Staff then table.insert(found, player.Name .. " is a " .. result.Role) end
                 end
                 if #found > 0 then
-                    Library:Notify("Staffwatch", table.concat(found, ",\n"))
+                    Library:Notify("Staffwatch", table.concat(found, "\n"))
                 else
                     Library:Notify("Staffwatch", "Enabled")
                 end
             else
-                Library:Notify("Staffwatch", "Game is not owned by a Group")
+                Library:Notify("Staffwatch", "Game not owned by a Group")
             end
         else
             if staffwatchConnection then
@@ -1218,9 +1162,7 @@ local function enableHoverName()
         local t
         if target then
             local humanoid = target.Parent:FindFirstChildOfClass("Humanoid") or target.Parent.Parent:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                t = humanoid.Parent
-            end
+            if humanoid then t = humanoid.Parent end
         end
         if t then
             local x = mouse.X
@@ -1244,24 +1186,43 @@ local function disableHoverName()
         hoverNameConnection:Disconnect()
         hoverNameConnection = nil
     end
-    if nameBox then
-        nameBox:Destroy()
-    end
-    if nbSelection then
-        nbSelection:Destroy()
-    end
+    if nameBox then nameBox:Destroy() end
+    if nbSelection then nbSelection:Destroy() end
 end
 
 PlayerTab:AddToggle({
     Name = "Hover Name",
     Default = false,
     Callback = function(state)
-        if state then
-            enableHoverName()
-            Library:Notify("Hover Name", "Enabled")
+        if state then enableHoverName() else disableHoverName() end
+        Library:Notify("Hover Name", state and "Enabled" or "Disabled")
+    end
+})
+
+-- Teleport
+PlayerTab:AddTextbox({
+    Name = "Teleport Target",
+    Default = "",
+    PlaceholderText = "Enter player name",
+    Callback = function(value)
+        State.TeleportTarget = value
+    end
+})
+
+PlayerTab:AddButton({
+    Name = "Teleport",
+    Callback = function()
+        local players = getPlayer(State.TeleportTarget, LocalPlayer)
+        if #players > 0 then
+            local target = Players[players[1]]
+            if target and target.Character and getRoot(LocalPlayer.Character) and getRoot(target.Character) then
+                getRoot(LocalPlayer.Character).CFrame = getRoot(target.Character).CFrame
+                Library:Notify("Teleport", "Teleported to " .. target.Name)
+            else
+                Library:Notify("Teleport", "Target not found or invalid")
+            end
         else
-            disableHoverName()
-            Library:Notify("Hover Name", "Disabled")
+            Library:Notify("Teleport", "No player found")
         end
     end
 })
