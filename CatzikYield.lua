@@ -24,7 +24,6 @@ local Window = Library:MakeWindow({
 local MainTab = Window:MakeTab({
     Name = "Main",
     Icon = "Home", -- use library's built-in icon name or asset id
-    Color = Color3.fromRGB(255, 100, 100)
 })
 
 MainTab:AddDiscordInvite({
@@ -41,7 +40,6 @@ MainTab:AddDiscordInvite({
 local PlayerTab = Window:MakeTab({
     Name = "Player",
     Icon = "User",
-    Color = Color3.fromRGB(100, 149, 255)
 })
 
 -- Services and locals
