@@ -4,10 +4,6 @@
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
 
--- Локальное состояние и настройки
-local Defaults = { WalkSpeed = 16, JumpPower = 50, FlySpeed = 100 }
-local State = { WalkSpeed = Defaults.WalkSpeed, JumpPower = Defaults.JumpPower, FlyEnabled = false, FlySpeed = Defaults.FlySpeed, Noclip = false }
-
 local Window = Library:MakeWindow({
     Title = "Catik Yield",
     SubTitle = "By Catik Yield",
