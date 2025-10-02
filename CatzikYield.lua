@@ -22,8 +22,8 @@ local MainTab = Window:MakeTab({
 MainTab:AddDiscordInvite({
     Title = "Catik Yield | Community",
     Description = "Catik Yield.",
-    Banner = "rbxassetid://74299525344625",
-    Logo = "rbxassetid://74299525344625",
+    Banner = "rbxassetid://103624317740952",
+    Logo = "rbxassetid://103624317740952",
     Invite = "https://discord.gg/Eg98P4wf2V",
     Members = 1488,
     Online = 1488
