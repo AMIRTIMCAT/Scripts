@@ -1,5 +1,5 @@
 -- Подключаем библиотеку DivineZ (ссылка — пример, замени на свою)
-local DivineZ = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourRepo/DivineZ/main/DivineZ.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 -- Локализация (если DivineZ поддерживает, либо своя реализация)
 local Localization = {
