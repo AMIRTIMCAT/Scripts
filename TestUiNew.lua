@@ -8,9 +8,9 @@ local Localization = WindUI:Localization({
     DefaultLanguage = "en",
     Translations = {
         ["en"] = {
-            ["WINDUI_EXAMPLE"] = "WindUI Example",
-            ["WELCOME"] = "Welcome to WindUI!",
-            ["LIB_DESC"] = "Beautiful UI library for Roblox",
+            ["WINDUI_EXAMPLE"] = "DivineZ",
+            ["WELCOME"] = "Welcome to DivineZ!",
+            ["LIB_DESC"] = "DivineZ NOT best script for Roblox",
             ["SETTINGS"] = "Settings",
             ["APPEARANCE"] = "Appearance",
             ["FEATURES"] = "Features",
@@ -21,7 +21,6 @@ local Localization = WindUI:Localization({
             ["LOAD_CONFIG"] = "Load Configuration",
             ["THEME_SELECT"] = "Select Theme",
             ["TRANSPARENCY"] = "Window Transparency",
-            ["LOCKED_TAB"] = "Locked Tab"
         }
     }
 })
@@ -42,7 +41,7 @@ local function gradient(text, startColor, endColor)
 end
 
 WindUI:Popup({
-    Title = gradient("WindUI Demo", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+    Title = gradient("DivineZ", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
     Icon = "sparkles",
     Content = "loc:LIB_DESC",
     Buttons = {
@@ -94,12 +93,12 @@ WindUI.Services.mysuperservicetogetkey = {
 
 
 local Window = WindUI:CreateWindow({
-    Title = "loc:WINDUI_EXAMPLE",
+    Title = "loc:DIVINEZ_EXAMPLE",
     Icon = "geist:window",
     Author = "loc:WELCOME",
-    Folder = "WindUI_Example",
+    Folder = "DivineZ_Example",
     Size = UDim2.fromOffset(580, 490),
-    Theme = "Dark",
+    Theme = "Amber",
     
     HidePanelBackground = false,
     NewElements = false,
@@ -244,12 +243,6 @@ local Tabs = {
     Elements = Sections.Main:Tab({ Title = "loc:UI_ELEMENTS", Icon = "layout-grid", Desc = "UI Elements Example" }),
     Appearance = Sections.Settings:Tab({ Title = "loc:APPEARANCE", Icon = "brush" }),
     Config = Sections.Utilities:Tab({ Title = "loc:CONFIGURATION", Icon = "settings" }),
-    LockedTab1 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab2 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab3 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab4 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-    LockedTab5 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "bird", Locked = true, }),
-}
 
 -- Tabs.Elements:Paragraph({
 --     Title = "Interactive Components",
@@ -265,7 +258,7 @@ Tabs.Elements:Section({
 })
 
 Tabs.Elements:Section({
-    Title = "Explore WindUI's powerful elements",
+    Title = "Explore DivineZ's powerful elements",
     TextSize = 16,
     TextTransparency = .25,
 })
@@ -333,7 +326,7 @@ ElementsSection:Button({
     Icon = "bell",
     Callback = function()
         WindUI:Notify({
-            Title = "Hello WindUI!",
+            Title = "Hello DivineZ!",
             Content = "This is a sample notification",
             Icon = "bell",
             Duration = 3
@@ -387,7 +380,7 @@ local themeDropdown = Tabs.Appearance:Dropdown({
     Values = themes,
     SearchBarEnabled = true,
     MenuWidth = 280,
-    Value = "Dark",
+    Value = "Amber",
     Callback = function(theme)
         canchangedropdown = false
         WindUI:SetTheme(theme)
@@ -431,7 +424,7 @@ local ThemeToggle = Tabs.Appearance:Toggle({
 
 WindUI:OnThemeChange(function(theme)
     canchangetheme = false
-    ThemeToggle:Set(theme == "Dark")
+    ThemeToggle:Set(theme == "Amber")
     canchangetheme = true
 end)
 
