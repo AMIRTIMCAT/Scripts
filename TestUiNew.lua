@@ -1,35 +1,67 @@
--- This is just an example.
+-- Подключаем библиотеку DivineZ (ссылка — пример, замени на свою)
+local DivineZ = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourRepo/DivineZ/main/DivineZ.lua"))()
 
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-
-local Localization = WindUI:Localization({
+-- Локализация (если DivineZ поддерживает, либо своя реализация)
+local Localization = {
     Enabled = true,
     Prefix = "loc:",
     DefaultLanguage = "en",
     Translations = {
-        ["en"] = {
-            ["WINDUI_EXAMPLE"] = "DivineZ",
-            ["WELCOME"] = "Welcome to DivineZ!",
-            ["LIB_DESC"] = "DivineZ NOT best script for Roblox",
-            ["SETTINGS"] = "Settings",
-            ["APPEARANCE"] = "Appearance",
-            ["FEATURES"] = "Features",
-            ["UTILITIES"] = "Utilities",
-            ["UI_ELEMENTS"] = "UI Elements",
-            ["CONFIGURATION"] = "Configuration",
-            ["SAVE_CONFIG"] = "Save Configuration",
-            ["LOAD_CONFIG"] = "Load Configuration",
-            ["THEME_SELECT"] = "Select Theme",
-            ["TRANSPARENCY"] = "Window Transparency",
-        }
+        en = {
+            WINDUI_EXAMPLE = "DivineZ Example",
+            WELCOME = "Welcome to DivineZ!",
+            LIB_DESC = "Beautiful UI library for Roblox (DivineZ)",
+            SETTINGS = "Settings",
+            APPEARANCE = "Appearance",
+            FEATURES = "Features",
+            UTILITIES = "Utilities",
+            UI_ELEMENTS = "UI Elements",
+            CONFIGURATION = "Configuration",
+            SAVE_CONFIG = "Save Configuration",
+            LOAD_CONFIG = "Load Configuration",
+            THEME_SELECT = "Select Theme",
+            TRANSPARENCY = "Window Transparency",
+            LOCKED_TAB = "Locked Tab"
+        },
+        ru = {
+            WINDUI_EXAMPLE = "Пример DivineZ",
+            WELCOME = "Добро пожаловать в DivineZ!",
+            LIB_DESC = "Красивая UI‑библиотека для Roblox (DivineZ)",
+            SETTINGS = "Настройки",
+            APPEARANCE = "Внешний вид",
+            FEATURES = "Функции",
+            UTILITIES = "Утилиты",
+            UI_ELEMENTS = "Элементы UI",
+            CONFIGURATION = "Конфигурация",
+            SAVE_CONFIG = "Сохранить конфигурацию",
+            LOAD_CONFIG = "Загрузить конфигурацию",
+            THEME_SELECT = "Выбрать тему",
+            TRANSPARENCY = "Прозрачность окна",
+            LOCKED_TAB = "Заблокированная вкладка"
+        },
     }
-})
+}
+-- Функция получения локализованного текста
+local function L(key)
+    if Localization.Enabled then
+        local lang = Localization.DefaultLanguage
+        local tbl = Localization.Translations[lang]
+        if tbl and tbl[key] then
+            return tbl[key]
+        end
+    end
+    return key
+end
 
-WindUI.TransparencyValue = 0.2
-WindUI:SetTheme("Dark")
+-- Установка темы (пример)
+DivineZ:SetTheme("Dark")
 
+-- Градиентная функция (если в DivineZ можно вставлять RichText / HTML)
 local function gradient(text, startColor, endColor)
     local result = ""
+    if #text <= 1 then
+        return text
+    end
     for i = 1, #text do
         local t = (i - 1) / (#text - 1)
         local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
@@ -40,8 +72,9 @@ local function gradient(text, startColor, endColor)
     return result
 end
 
-WindUI:Popup({
-    Title = gradient("DivineZ", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+-- Пример всплывающего окна
+DivineZ:Popup({
+    Title = gradient("DivineZ Demo", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
     Icon = "sparkles",
     Content = "loc:LIB_DESC",
     Buttons = {
@@ -49,142 +82,33 @@ WindUI:Popup({
             Title = "Get Started",
             Icon = "arrow-right",
             Variant = "Primary",
-            Callback = function() end
+            Callback = function()
+                -- что делать при нажатии
+            end
         }
     }
 })
 
-
--- Add your service to get key 
---[[
-WindUI.Services.mysuperservicetogetkey = {
-    Name = "My Super Service",
-    Icon = "droplet", -- lucide or rbxassetid or raw link to img
-    
-    Args = { "ServiceId" }, --       <- \
-    --                                   |
-    -- important!!!!!!!!!!!!!!!          |
-    New = function(ServiceId) -- <------ | Args!!!!!!!!!!!!
-        
-        function validateKey(key) -- <--- this too important!!!
-            -- your function to validate key
-            -- see examples at src/utils/
-            
-            if not key then
-                return false, "Key is invalid!" 
-                
-            end
-            
-            return true, "Key is valid!" 
-        end
-        
-        function copyLink()
-            return setclipboard("link to key system service.")
-        end
-        
-        return { 
-        
-            Verify = validateKey, -- <-----  THIS TOO IMPORTANT!!!!!
-            Copy = copyLink -- <-------- IMPORTANT!1!1!1!1!1!1!11!
-        }
-    end
-}
-]]
-
-
-local Window = WindUI:CreateWindow({
-    Title = "loc:DIVINEZ_EXAMPLE",
-    Icon = "geist:window",
+-- Создание окна
+local Window = DivineZ:CreateWindow({
+    Title = "loc:WINDUI_EXAMPLE",
+    Icon = "window_icon",  -- пример
     Author = "loc:WELCOME",
     Folder = "DivineZ_Example",
     Size = UDim2.fromOffset(580, 490),
-    Theme = "Amber",
-    
+    Theme = "Dark",
     HidePanelBackground = false,
-    NewElements = false,
-    -- Background = WindUI:Gradient({
-    --     ["0"] = { Color = Color3.fromHex("#0f0c29"), Transparency = 1 },
-    --     ["100"] = { Color = Color3.fromHex("#302b63"), Transparency = 0.9 },
-    -- }, {
-    --     Rotation = 45,
-    -- }),
-    --Background = "video:https://cdn.discordapp.com/attachments/1337368451865645096/1402703845657673878/VID_20250616_180732_158.webm?ex=68958a01&is=68943881&hm=164c5b04d1076308b38055075f7eb0653c1d73bec9bcee08e918a31321fe3058&",
-    User = {
-        Enabled = true,
-        Anonymous = true,
-        Callback = function()
-            WindUI:Notify({
-                Title = "User Profile",
-                Content = "User profile clicked!",
-                Duration = 3
-            })
-        end
-    },
     Acrylic = false,
     HideSearchBar = false,
     SideBarWidth = 200,
-    -- KeySystem = { -- 
-    --     -- Key = { "1234", "5678" },  
-    --     Note = "Example Key System. With platoboost, etc.",
-    --     -- URL = "https://github.com/Footagesus/WindUI",
-    --     -- Thumbnail = {
-    --     --     Image = "rbxassetid://",
-    --     --     Title = "Thumbnail",
-    --     -- },
-    --     API = {
-    --         {   
-    --             -- Title = "Platoboost", -- optional 
-    --             -- Desc = "Click to copy.", -- optional
-    --             -- Icon = "rbxassetid://", -- optional
-    
-    --             Type = "platoboost", -- type: platoboost, ...
-    --             ServiceId = 5541, -- service id
-    --             Secret = "1eda3b70-aab4-4394-82e4-4e7f507ae198", -- platoboost secret
-    --         },
-    --         {   
-    --             -- Title = "Other service", -- optional 
-    --             -- Desc = nil, -- optional
-    --             -- Icon = "rbxassetid://", -- optional
-    
-    --             Type = "pandadevelopment", -- type: platoboost, ...
-    --             ServiceId = "windui", -- service id
-    --         },
-    --         {   
-    --             Type = "luarmor",
-    --             ScriptId = "...",
-    --             Discord = "https://discord.com/invite/...",
-    --         },
-    --         { -- Custom service 
-    --             Type = "mysuperservicetogetkey",
-    --             ServiceId = 42,
-    --         }
-    --     },
-    --     SaveKey = true,
-    -- },
-    -- KeySystem = {
-    --     Key = { "pisun" },
-    --     Thumbnail = {
-    --         Image = "rbxassetid://88271032881974",
-    --         Width = 180, -- default 200
-    --     }
-    -- }
 })
 
-
-
--- OPTIONAL   >:(
-
-
-Window.User:SetAnonymous(true)
---Window.User:Disable()
-
-
-
-
+-- Настройка окна
 Window:SetIconSize(48)
 
+-- Теги окна
 Window:Tag({
-    Title = "v1.6.4",
+    Title = "v1.0.0",
     Color = Color3.fromHex("#30ff6a")
 })
 Window:Tag({
@@ -194,138 +118,104 @@ Window:Tag({
 local TimeTag = Window:Tag({
     Title = "--:--",
     Radius = 0,
-    --Color = Color3.fromHex("#000000"),
-    Color = WindUI:Gradient({
-        ["0"]   = { Color = Color3.fromHex("#FF0F7B"), Transparency = 0 },
-        ["100"] = { Color = Color3.fromHex("#F89B29"), Transparency = 0 },
-    }, {
-        Rotation = 45,
-    }),
+    Color = Color3.new(1,1,1)
 })
 
-
-local hue = 0
-
--- Rainbow effect & Time 
+-- Обновление времени и радуги
 task.spawn(function()
-	while true do
-		local now = os.date("*t")
-		local hours = string.format("%02d", now.hour)
-		local minutes = string.format("%02d", now.min)
-		
-		hue = (hue + 0.01) % 1
-		local color = Color3.fromHSV(hue, 1, 1)
-		
-		TimeTag:SetTitle(hours .. ":" .. minutes)
-		--TimeTag:SetColor(color)
-
-		task.wait(0.06)
-	end
+    local hue = 0
+    while true do
+        local now = os.date("*t")
+        local hours = string.format("%02d", now.hour)
+        local mins = string.format("%02d", now.min)
+        hue = (hue + 0.01) % 1
+        local c = Color3.fromHSV(hue, 1, 1)
+        TimeTag:SetTitle(hours .. ":" .. mins)
+        -- возможно: TimeTag:SetColor(c)
+        task.wait(0.06)
+    end
 end)
 
-
+-- Кнопка переключения темы
 Window:CreateTopbarButton("theme-switcher", "moon", function()
-    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
-    WindUI:Notify({
+    local current = DivineZ:GetCurrentTheme()
+    local newTheme = (current == "Dark") and "Light" or "Dark"
+    DivineZ:SetTheme(newTheme)
+    DivineZ:Notify({
         Title = "Theme Changed",
-        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Content = "Current theme: " .. newTheme,
         Duration = 2
     })
 end, 990)
 
+-- Секции и вкладки
 local Sections = {
     Main = Window:Section({ Title = "loc:FEATURES", Opened = true }),
     Settings = Window:Section({ Title = "loc:SETTINGS", Opened = true }),
-    Utilities = Window:Section({ Title = "loc:UTILITIES", Opened = true })
+    Utilities = Window:Section({ Title = "loc:UTILITIES", Opened = true }),
 }
-
 local Tabs = {
-    Elements = Sections.Main:Tab({ Title = "loc:UI_ELEMENTS", Icon = "layout-grid", Desc = "UI Elements Example" }),
+    Elements = Sections.Main:Tab({ Title = "loc:UI_ELEMENTS", Icon = "layout-grid" }),
     Appearance = Sections.Settings:Tab({ Title = "loc:APPEARANCE", Icon = "brush" }),
     Config = Sections.Utilities:Tab({ Title = "loc:CONFIGURATION", Icon = "settings" }),
+    Locked1 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "lock", Locked = true }),
+    Locked2 = Window:Tab({ Title = "loc:LOCKED_TAB", Icon = "lock", Locked = true }),
+}
 
--- Tabs.Elements:Paragraph({
---     Title = "Interactive Components",
---     Desc = "Explore WindUI's powerful elements",
---     Image = "component",
---     ImageSize = 20,
---     Color = Color3.fromHex("#30ff6a"),
--- })
-
-Tabs.Elements:Section({
-    Title = "Interactive Components",
-    TextSize = 20,
-})
-
-Tabs.Elements:Section({
-    Title = "Explore DivineZ's powerful elements",
-    TextSize = 16,
-    TextTransparency = .25,
-})
-
-Tabs.Elements:Divider()
-
-local ElementsSection = Tabs.Elements:Section({
+-- Вкладка Elements — примеры элементов
+local elSec = Tabs.Elements:Section({
     Title = "Section Example",
-    Icon = "bird",
+    Icon = "star"
 })
 
 local toggleState = false
-local featureToggle = ElementsSection:Toggle({
+local featureToggle = elSec:Toggle({
     Title = "Enable Features",
-    --Desc = "Unlocks additional functionality",
     Value = false,
-    Callback = function(state) 
+    Callback = function(state)
         toggleState = state
-        WindUI:Notify({
+        DivineZ:Notify({
             Title = "Features",
-            Content = state and "Features Enabled" or "Features Disabled",
+            Content = state and "Enabled" or "Disabled",
             Icon = state and "check" or "x",
             Duration = 2
         })
     end
 })
 
-local intensitySlider = ElementsSection:Slider({
+local intensitySlider = elSec:Slider({
     Title = "Effect Intensity",
-    Desc = "Adjust the effect strength",
+    Desc = "Adjust strength",
     Value = { Min = 0, Max = 100, Default = 50 },
-    Callback = function(value)
-        print("Intensity set to:", value)
+    Callback = function(v)
+        print("Intensity:", v)
     end
 })
 
-local values = {}
-
+local dropdownValues = {}
 for i = 1, 40 do
-    table.insert(values, "Test " .. i)
+    dropdownValues[i] = "Test " .. i
 end
 
-ElementsSection:Space()
+elSec:Space()
 
-
-local testDropdown = ElementsSection:Dropdown({
+local testDropdown = elSec:Dropdown({
     Title = "Dropdown test",
-    Values = values,
-    Value = "Test 1",
-    Callback = function(option)
-        -- WindUI:Notify({
-        --     Title = "Dropdown",
-        --     Content = "Selected: "..option,
-        --     Duration = 2
-        -- })
+    Values = dropdownValues,
+    Value = dropdownValues[1],
+    Callback = function(opt)
+        print("Selected:", opt)
     end
 })
+testDropdown:Refresh(dropdownValues)
 
-testDropdown:Refresh(values)
+elSec:Divider()
 
-ElementsSection:Divider()
-
-ElementsSection:Button({
+elSec:Button({
     Title = "Show Notification",
     Icon = "bell",
     Callback = function()
-        WindUI:Notify({
+        DivineZ:Notify({
             Title = "Hello DivineZ!",
             Content = "This is a sample notification",
             Icon = "bell",
@@ -334,100 +224,88 @@ ElementsSection:Button({
     end
 })
 
-ElementsSection:Colorpicker({
+elSec:Colorpicker({
     Title = "Select Color",
-    --Desc = "Select coloe",
     Default = Color3.fromHex("#30ff6a"),
-    Transparency = 0, -- enable transparency
-    Callback = function(color, transparency)
-        WindUI:Notify({
+    Transparency = 0,
+    Callback = function(col, tr)
+        DivineZ:Notify({
             Title = "Color Changed",
-            Content = "New color: "..color:ToHex().."\nTransparency: "..transparency,
+            Content = string.format("New: %s, Transparency: %.2f", col:ToHex(), tr),
             Duration = 2
         })
     end
 })
 
-ElementsSection:Code({
-    Title = "my_code.luau",
+elSec:Code({
+    Title = "my_code.lua",
     Code = [[print("Hello world!")]],
     OnCopy = function()
-        print("Copied to clipboard!")
+        print("Copied code")
     end
 })
 
+-- Вкладка Appearance
 Tabs.Appearance:Paragraph({
     Title = "Customize Interface",
-    Desc = "Personalize your experience",
+    Desc = "Personalize settings",
     Image = "palette",
     ImageSize = 20,
     Color = "White"
 })
 
 local themes = {}
-for themeName, _ in pairs(WindUI:GetThemes()) do
-    table.insert(themes, themeName)
+for name, _ in pairs(DivineZ:GetThemes()) do
+    table.insert(themes, name)
 end
 table.sort(themes)
 
-local canchangetheme = true
-local canchangedropdown = true
-
-
-
+local canChangeTheme = true
 local themeDropdown = Tabs.Appearance:Dropdown({
     Title = "loc:THEME_SELECT",
     Values = themes,
     SearchBarEnabled = true,
     MenuWidth = 280,
-    Value = "Amber",
+    Value = DivineZ:GetCurrentTheme(),
     Callback = function(theme)
-        canchangedropdown = false
-        WindUI:SetTheme(theme)
-        WindUI:Notify({
-            Title = "Theme Applied",
-            Content = theme,
-            Icon = "palette",
-            Duration = 2
-        })
-        canchangedropdown = true
+        if canChangeTheme then
+            DivineZ:SetTheme(theme)
+            DivineZ:Notify({
+                Title = "Theme Applied",
+                Content = theme,
+                Icon = "palette",
+                Duration = 2
+            })
+        end
     end
 })
 
 local transparencySlider = Tabs.Appearance:Slider({
     Title = "loc:TRANSPARENCY",
-    Value = { 
-        Min = 0,
-        Max = 1,
-        Default = 0.2,
-    },
-    Step = 0.1,
-    Callback = function(value)
-        WindUI.TransparencyValue = tonumber(value)
-        Window:ToggleTransparency(tonumber(value) > 0)
+    Value = { Min = 0, Max = 1, Default = 0.2 },
+    Step = 0.05,
+    Callback = function(val)
+        DivineZ.TransparencyValue = val
+        Window:ToggleTransparency(val > 0)
     end
 })
 
-local ThemeToggle = Tabs.Appearance:Toggle({
+local themeToggle = Tabs.Appearance:Toggle({
     Title = "Enable Dark Mode",
-    Desc = "Use dark color scheme",
-    Value = true,
-    Callback = function(state)
-        if canchangetheme then
-            WindUI:SetTheme(state and "Dark" or "Light")
-        end
-        if canchangedropdown then
-            themeDropdown:Select(state and "Dark" or "Light")
+    Desc = "Switch dark/light",
+    Value = (DivineZ:GetCurrentTheme() == "Dark"),
+    Callback = function(st)
+        if canChangeTheme then
+            DivineZ:SetTheme(st and "Dark" or "Light")
         end
     end
 })
 
-WindUI:OnThemeChange(function(theme)
-    canchangetheme = false
-    ThemeToggle:Set(theme == "Amber")
-    canchangetheme = true
+DivineZ:OnThemeChange(function(newTheme)
+    canChangeTheme = false
+    themeToggle:Set(newTheme == "Dark")
+    canChangeTheme = true
 end)
-
 
 Tabs.Appearance:Button({
     Title = "Create New Theme",
@@ -435,17 +313,15 @@ Tabs.Appearance:Button({
     Callback = function()
         Window:Dialog({
             Title = "Create Theme",
-            Content = "This feature is coming soon!",
+            Content = "Coming soon!",
             Buttons = {
-                {
-                    Title = "OK",
-                    Variant = "Primary"
-                }
+                { Title = "OK", Variant = "Primary" }
             }
         })
     end
 })
 
+-- Вкладка Config
 Tabs.Config:Paragraph({
     Title = "Configuration Manager",
     Desc = "Save and load your settings",
@@ -465,42 +341,40 @@ local MyPlayerData = {
 Tabs.Config:Input({
     Title = "Config Name",
     Value = configName,
-    Callback = function(value)
-        configName = value or "default"
+    Callback = function(val)
+        configName = val or "default"
     end
 })
 
+-- Предположим, у DivineZ есть ConfigManager
 local ConfigManager = Window.ConfigManager
 if ConfigManager then
     ConfigManager:Init(Window)
-    
+
     Tabs.Config:Button({
         Title = "loc:SAVE_CONFIG",
         Icon = "save",
         Variant = "Primary",
         Callback = function()
             configFile = ConfigManager:CreateConfig(configName)
-            
             configFile:Register("featureToggle", featureToggle)
             configFile:Register("intensitySlider", intensitySlider)
             configFile:Register("testDropdown", testDropdown)
             configFile:Register("themeDropdown", themeDropdown)
             configFile:Register("transparencySlider", transparencySlider)
-            
             configFile:Set("playerData", MyPlayerData)
             configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
-            
             if configFile:Save() then
-                WindUI:Notify({ 
-                    Title = "loc:SAVE_CONFIG", 
-                    Content = "Saved as: "..configName,
+                DivineZ:Notify({
+                    Title = "loc:SAVE_CONFIG",
+                    Content = "Saved as: " .. configName,
                     Icon = "check",
                     Duration = 3
                 })
             else
-                WindUI:Notify({ 
-                    Title = "Error", 
-                    Content = "Failed to save config",
+                DivineZ:Notify({
+                    Title = "Error",
+                    Content = "Failed saving",
                     Icon = "x",
                     Duration = 3
                 })
@@ -513,32 +387,30 @@ if ConfigManager then
         Icon = "folder",
         Callback = function()
             configFile = ConfigManager:CreateConfig(configName)
-            local loadedData = configFile:Load()
-            
-            if loadedData then
-                if loadedData.playerData then
-                    MyPlayerData = loadedData.playerData
+            local loaded = configFile:Load()
+            if loaded then
+                if loaded.playerData then
+                    MyPlayerData = loaded.playerData
                 end
-                
-                local lastSave = loadedData.lastSave or "Unknown"
-                WindUI:Notify({ 
-                    Title = "loc:LOAD_CONFIG", 
-                    Content = "Loaded: "..configName.."\nLast save: "..lastSave,
+                local last = loaded.lastSave or "Unknown"
+                DivineZ:Notify({
+                    Title = "loc:LOAD_CONFIG",
+                    Content = "Loaded: " .. configName .. "\nLast: " .. last,
                     Icon = "refresh-cw",
                     Duration = 5
                 })
-                
                 Tabs.Config:Paragraph({
                     Title = "Player Data",
-                    Desc = string.format("Name: %s\nLevel: %d\nInventory: %s", 
-                        MyPlayerData.name, 
-                        MyPlayerData.level, 
-                        table.concat(MyPlayerData.inventory, ", "))
+                    Desc = string.format("Name: %s\nLevel: %d\nInv: %s",
+                        MyPlayerData.name,
+                        MyPlayerData.level,
+                        table.concat(MyPlayerData.inventory, ", ")
+                    )
                 })
             else
-                WindUI:Notify({ 
-                    Title = "Error", 
-                    Content = "Failed to load config",
+                DivineZ:Notify({
+                    Title = "Error",
+                    Content = "Failed loading",
                     Icon = "x",
                     Duration = 3
                 })
@@ -548,18 +420,18 @@ if ConfigManager then
 else
     Tabs.Config:Paragraph({
         Title = "Config Manager Not Available",
-        Desc = "This feature requires ConfigManager",
+        Desc = "Requires ConfigManager",
         Image = "alert-triangle",
         ImageSize = 20,
         Color = "White"
     })
 end
 
-
-local footerSection = Window:Section({ Title = "WindUI " .. WindUI.Version })
+-- Footer секция
+local footer = Window:Section({ Title = "DivineZ Version" })
 Tabs.Config:Paragraph({
-    Title = "Github Repository",
-    Desc = "github.com/Footagesus/WindUI",
+    Title = "GitHub Repository",
+    Desc = "github.com/YourRepo/DivineZ",
     Image = "github",
     ImageSize = 20,
     Color = "Grey",
@@ -569,10 +441,10 @@ Tabs.Config:Paragraph({
             Icon = "copy",
             Variant = "Tertiary",
             Callback = function()
-                setclipboard("https://github.com/Footagesus/WindUI")
-                WindUI:Notify({
+                setclipboard("https://github.com/YourRepo/DivineZ")
+                DivineZ:Notify({
                     Title = "Copied!",
-                    Content = "GitHub link copied to clipboard",
+                    Content = "GitHub link copied",
                     Duration = 2
                 })
             end
@@ -582,47 +454,31 @@ Tabs.Config:Paragraph({
 
 Window:OnClose(function()
     print("Window closed")
-    
     if ConfigManager and configFile then
         configFile:Set("playerData", MyPlayerData)
         configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
         configFile:Save()
-        print("Config auto-saved on close")
+        print("Auto‑saved config on close")
     end
-end)
-
-Window:OnDestroy(function()
-    print("Window destroyed")
 end)
 
 Window:OnOpen(function()
     print("Window opened")
 end)
 
-
-
--- lock all elements
+-- Расблокировка элементов (если поддерживается)
 Window:UnlockAll()
 
--- unlock all elements
---Window:UnlockAll()
-
--- unlock all elements in tab
-task.wait(0.05)
---  no working :( idk why 
--- Tabs.Elements:LockAll()
-
-if Window:GetUnlocked() and #Window:GetUnlocked() > 0 then
-    print("Locked Elements in Window: ")
-    for _, lockedelement in next, Window:GetUnlocked() do
-        local title = lockedelement.Title
+-- Пример печати заблокированных элементов (если DivineZ хранит так)
+local unlocked = Window:GetUnlocked and Window:GetUnlocked()
+if unlocked and #unlocked > 0 then
+    print("Locked elements:")
+    for _, elem in ipairs(unlocked) do
+        local title = elem.Title
         if string.find(title, Localization.Prefix) then
-            local translations = Localization.Translations[WindUI.Creator.Language] or Localization.Translations[Localization.DefaultLanguage]
-            title = translations[ title:gsub("^" .. Localization.Prefix, "") ]
+            local key = title:sub(#Localization.Prefix + 1)
+            title = Localization.Translations[Localization.DefaultLanguage][key] or title
         end
         print("- " .. (title or "Unknown"))
     end
-    
 end
-
-
