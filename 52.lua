@@ -5,26 +5,18 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local bases = Workspace:WaitForChild("Bases")
 
-local foundTargets = {}
-
--- 🔍 Поиск всех персонажей, чьи имена ОКАНЧИВАЮТСЯ на "Femboy"
-for _, base in pairs(bases:GetChildren()) do
+for _, base in ipairs(bases:GetChildren()) do
 	if base:IsA("Model") then
 		local slots = base:FindFirstChild("Slots")
 		if slots then
-			for _, slot in pairs(slots:GetChildren()) do
-				if slot:IsA("Model") then
-					for _, model in pairs(slot:GetChildren()) do
-						if model:IsA("Model") then
-							local name = string.lower(model.Name)
-							-- проверка: имя должно заканчиваться на " femboy"
-							if string.match(name, " femboy$") then
-								local hrp = model:FindFirstChild("HumanoidRootPart")
-								if hrp then
-									table.insert(foundTargets, hrp)
-									print("👀 Найден персонаж:", model.Name)
-								end
-							end
+			for _, slot in ipairs(slots:GetChildren()) do
+				for _, model in ipairs(slot:GetChildren()) do
+					if model:IsA("Model") and string.match(string.lower(model.Name), " femboy$") then
+						local hrp = model:FindFirstChild("HumanoidRootPart")
+						if hrp then
+							character:MoveTo(hrp.Position + Vector3.new(0, 5, 0))
+							print("✅ ТП к:", model.Name)
+							return
 						end
 					end
 				end
@@ -33,11 +25,4 @@ for _, base in pairs(bases:GetChildren()) do
 	end
 end
 
--- ⚡ Телепорт к первому найденному Femboy
-if #foundTargets > 0 then
-	local target = foundTargets[1]
-	character:MoveTo(target.Position + Vector3.new(0, 5, 0))
-	print("✅ Телепорт прямо к:", target.Parent.Name)
-else
-	warn("❌ Персонажей с окончанием 'Femboy' не найдено!")
-end
+warn("❌ Не найдено персонажей, оканчивающихся на 'Femboy'")
