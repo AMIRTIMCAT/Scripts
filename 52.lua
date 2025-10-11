@@ -102,15 +102,20 @@ local function stealAndReturn()
 		return
 	end
 
-	-- Найти чужую базу
-	local targetBase
+	-- Найти свою базу
+	local myBase
+	lcoal bases = Workspace.WaitForChild("Bases")
+
 	for _, base in ipairs(bases:GetChildren()) do
-		local conf = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
-		if conf and conf:FindFirstChild("Player") and conf.Player.Value ~= player.Name then
-			targetBase = base
+	local conf = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
+	if conf and conf:FindFirstChild("Player") then
+		local playerValue = conf.Player
+		if playerValue.Value == player or (playerValue.Value and playerValue.Value.Name == player.Name) then
+			myBase = base
 			break
 		end
 	end
+end
 
 	if not targetBase then
 		showNotify("❌ Нет чужих баз!", Color3.fromRGB(180, 60, 60))
@@ -158,4 +163,3 @@ if game:GetService("UserInputService").TouchEnabled then
 end
 
 print("✅ Скрипт 'Украсть и вернуться' загружен!")
-
