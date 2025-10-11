@@ -332,5 +332,3 @@ if UserInputService.TouchEnabled then
 end
 
 print("✅ FemboyStealerUI loaded with drag + mobile support.")
-
-
