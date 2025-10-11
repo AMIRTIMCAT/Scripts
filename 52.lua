@@ -1,167 +1,195 @@
--- ⚡ Тёмный мини-UI для "Украсть и вернуться"
--- Работает на PC и Mobile
+-- 🌀 Femboy Stealer GUI by ChatGPT (Dark Mode Version)
+-- Авто-ТП, авто-промпт, возврат и UI
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
+
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
--- 🧱 UI
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "StealUI"
-gui.ResetOnSpawn = false
+-- 🧩 Функция уведомлений
+local function createNotification(text)
+	local screenGui = player:FindFirstChild("PlayerGui"):FindFirstChild("FemboyNotifyGui")
+	if not screenGui then
+		screenGui = Instance.new("ScreenGui")
+		screenGui.Name = "FemboyNotifyGui"
+		screenGui.Parent = player:WaitForChild("PlayerGui")
+	end
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 280, 0, 150)
-frame.Position = UDim2.new(0.5, -140, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-frame.BorderSizePixel = 0
+	local msg = Instance.new("TextLabel")
+	msg.Size = UDim2.new(0.4, 0, 0.07, 0)
+	msg.Position = UDim2.new(0.3, 0, 0.85, 0)
+	msg.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	msg.BorderSizePixel = 0
+	msg.Text = text
+	msg.TextColor3 = Color3.fromRGB(0, 255, 150)
+	msg.TextScaled = true
+	msg.Font = Enum.Font.GothamBold
+	msg.BackgroundTransparency = 0.15
+	msg.Parent = screenGui
+	msg.TextTransparency = 1
+	msg.BackgroundTransparency = 1
 
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 12)
+	-- Анимация появления
+	TweenService:Create(msg, TweenInfo.new(0.3), {
+		TextTransparency = 0,
+		BackgroundTransparency = 0.15
+	}):Play()
 
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(90, 90, 150)
-stroke.Thickness = 2
+	task.wait(2)
 
-local title = Instance.new("TextLabel", frame)
-title.Text = "🌀 Украсть и вернуться"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamSemibold
-title.TextSize = 18
-
-local stealBtn = Instance.new("TextButton", frame)
-stealBtn.Size = UDim2.new(1, -40, 0, 40)
-stealBtn.Position = UDim2.new(0, 20, 0, 45)
-stealBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
-stealBtn.Text = "🌀 Украсть и вернуться"
-stealBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-stealBtn.Font = Enum.Font.GothamBold
-stealBtn.TextSize = 16
-
-local stealCorner = Instance.new("UICorner", stealBtn)
-stealCorner.CornerRadius = UDim.new(0, 8)
-
-local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(1, -40, 0, 35)
-closeBtn.Position = UDim2.new(0, 20, 0, 95)
-closeBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-closeBtn.Text = "🔘 Закрыть"
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Font = Enum.Font.GothamSemibold
-closeBtn.TextSize = 14
-
-local closeCorner = Instance.new("UICorner", closeBtn)
-closeCorner.CornerRadius = UDim.new(0, 8)
-
--- 🌟 Уведомление
-local notify = Instance.new("TextLabel", gui)
-notify.Size = UDim2.new(0, 300, 0, 50)
-notify.Position = UDim2.new(0.5, -150, 0.1, 0)
-notify.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
-notify.TextColor3 = Color3.fromRGB(255, 255, 255)
-notify.Font = Enum.Font.GothamSemibold
-notify.TextSize = 16
-notify.Visible = false
-
-local notifyCorner = Instance.new("UICorner", notify)
-notifyCorner.CornerRadius = UDim.new(0, 10)
-
-local function showNotify(text, color)
-	notify.Text = text
-	notify.BackgroundColor3 = color or Color3.fromRGB(35, 35, 55)
-	notify.Visible = true
-	TweenService:Create(notify, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-	task.wait(1.3)
-	TweenService:Create(notify, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+	-- Исчезновение
+	TweenService:Create(msg, TweenInfo.new(0.3), {
+		TextTransparency = 1,
+		BackgroundTransparency = 1
+	}):Play()
 	task.wait(0.3)
-	notify.Visible = false
+	msg:Destroy()
 end
 
--- ⚙️ Основная функция
-local function stealAndReturn()
-	character = player.Character or player.CharacterAdded:Wait()
-	local hrp = character:WaitForChild("HumanoidRootPart")
-
-	-- Найти свою базу
-	local myBase
+-- 🔍 Функция поиска своей базы
+local function getMyBase()
 	local bases = Workspace:WaitForChild("Bases")
 	for _, base in ipairs(bases:GetChildren()) do
 		local conf = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
-		if conf and conf:FindFirstChild("Player") and conf.Player.Value == player.Name then
-			myBase = base
-			break
+		if conf and conf:FindFirstChild("Player") then
+			local val = conf.Player.Value
+			if val == player or (val and val.Name == player.Name) then
+				return base
+			end
 		end
 	end
+	return nil
+end
 
-	if not myBase then
-		showNotify("⚠️ Твоя база не найдена!", Color3.fromRGB(200, 60, 60))
-		return
-	end
-
-	-- Найти свою базу
-	local myBase
-	lcoal bases = Workspace.WaitForChild("Bases")
-
+-- 🔍 Функция поиска чужой базы с Femboy
+local function findEnemyFemboy()
+	local bases = Workspace:WaitForChild("Bases")
 	for _, base in ipairs(bases:GetChildren()) do
-	local conf = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
-	if conf and conf:FindFirstChild("Player") then
-		local playerValue = conf.Player
-		if playerValue.Value == player or (playerValue.Value and playerValue.Value.Name == player.Name) then
-			myBase = base
-			break
+		local conf = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
+		if conf and conf:FindFirstChild("Player") then
+			local val = conf.Player.Value
+			if val ~= player and (not val or val.Name ~= player.Name) then
+				local slots = base:FindFirstChild("Slots")
+				if slots then
+					for _, slot in ipairs(slots:GetChildren()) do
+						for _, model in ipairs(slot:GetChildren()) do
+							if model:IsA("Model") and string.match(string.lower(model.Name), "femboy$") then
+								return model
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- 🎯 Телепорт игрока
+local function teleportTo(pos)
+	if not character:FindFirstChild("HumanoidRootPart") then
+		character:WaitForChild("HumanoidRootPart")
+	end
+	character:MoveTo(pos)
+end
+
+-- 💫 Активация ProximityPrompt
+local function activatePrompt()
+	for _, prompt in ipairs(Workspace:GetDescendants()) do
+		if prompt:IsA("ProximityPrompt") and (prompt.Enabled or prompt.MaxActivationDistance > 0) then
+			fireproximityprompt(prompt)
+			task.wait(0.1)
 		end
 	end
 end
 
-	if not targetBase then
-		showNotify("❌ Нет чужих баз!", Color3.fromRGB(180, 60, 60))
+-- 🕹️ Главная функция
+local function stealAndReturn()
+	local myBase = getMyBase()
+	if not myBase then
+		createNotification("⚠️ Не найдена твоя база!")
 		return
 	end
 
-	-- Телепорт к чужой базе
-	local targetSpawn = targetBase:FindFirstChild("Spawn")
-	if targetSpawn then
-		hrp.CFrame = targetSpawn.CFrame + Vector3.new(0, 3, 0)
-		showNotify("🌀 Телепорт к цели...", Color3.fromRGB(65, 105, 225))
+	local enemyModel = findEnemyFemboy()
+	if not enemyModel then
+		createNotification("❌ Не найдено ни одного Femboy у врагов!")
+		return
 	end
 
-	-- Использовать ближайший ProximityPrompt
-	task.wait(0.5)
-	for _, obj in ipairs(Workspace:GetDescendants()) do
-		if obj:IsA("ProximityPrompt") and (obj.Parent:IsDescendantOf(targetBase)) then
-			fireproximityprompt(obj)
-			showNotify("💰 Украдено!", Color3.fromRGB(50, 205, 50))
-			break
-		end
-	end
+	local pos = enemyModel.PrimaryPart and enemyModel.PrimaryPart.Position or enemyModel:GetModelCFrame().p
+	createNotification("🌀 Телепорт к цели...")
+	teleportTo(pos + Vector3.new(0, 3, 0))
 
-	-- Вернуться на свою базу
 	task.wait(1)
-	local mySpawn = myBase:FindFirstChild("Spawn")
-	if mySpawn then
-		hrp.CFrame = mySpawn.CFrame + Vector3.new(0, 3, 0)
-		showNotify("🏠 Возвращение на базу...", Color3.fromRGB(100, 149, 237))
+	activatePrompt()
+	createNotification("✅ Украдено успешно!")
+
+	task.wait(1)
+	local spawnPart = myBase:FindFirstChild("Spawn") or myBase:FindFirstChildWhichIsA("BasePart")
+	if spawnPart then
+		createNotification("🔁 Возврат на базу...")
+		teleportTo(spawnPart.Position + Vector3.new(0, 3, 0))
 		task.wait(0.5)
-		showNotify("✅ Успешно вернулся!", Color3.fromRGB(60, 200, 80))
+		createNotification("🏠 Вы вернулись на базу!")
+	else
+		createNotification("⚠️ Не найден Spawn на базе!")
 	end
 end
 
--- 🔘 Кнопки
+-- 💻 UI
+local gui = Instance.new("ScreenGui")
+gui.Name = "FemboyStealerUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 130)
+frame.Position = UDim2.new(0.5, -110, 0.5, -65)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(0, 255, 150)
+stroke.Thickness = 1.6
+stroke.Parent = frame
+
+local stealBtn = Instance.new("TextButton")
+stealBtn.Size = UDim2.new(1, -20, 0, 45)
+stealBtn.Position = UDim2.new(0, 10, 0, 15)
+stealBtn.Text = "🌀 Украсть и вернуться"
+stealBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+stealBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+stealBtn.Font = Enum.Font.GothamBold
+stealBtn.TextScaled = true
+stealBtn.Parent = frame
+
+local uicorner2 = Instance.new("UICorner")
+uicorner2.CornerRadius = UDim.new(0, 8)
+uicorner2.Parent = stealBtn
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(1, -20, 0, 35)
+closeBtn.Position = UDim2.new(0, 10, 0, 75)
+closeBtn.Text = "🔘 Закрыть"
+closeBtn.BackgroundColor3 = Color3.fromRGB(50, 10, 10)
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextScaled = true
+closeBtn.Parent = frame
+
+local uicorner3 = Instance.new("UICorner")
+uicorner3.CornerRadius = UDim.new(0, 8)
+uicorner3.Parent = closeBtn
+
+-- ⚡ Обработчики
 stealBtn.MouseButton1Click:Connect(stealAndReturn)
-closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
-
--- 📱 Поддержка мобильных
-if game:GetService("UserInputService").TouchEnabled then
-	frame.Size = UDim2.new(0, 320, 0, 180)
-	stealBtn.Size = UDim2.new(1, -40, 0, 50)
-	closeBtn.Size = UDim2.new(1, -40, 0, 45)
-	title.TextSize = 20
-end
-
-print("✅ Скрипт 'Украсть и вернуться' загружен!")
-
-
+closeBtn.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
