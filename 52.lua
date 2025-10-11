@@ -1,5 +1,5 @@
 -- ⚙️ Настройки
-local waitAtTarget = 1 -- сколько стоять у цели перед "украсть"
+local waitAtTarget = 0.5 -- сколько стоять у цели перед "украсть"
 local returnDelay = 0.5  -- задержка перед возвратом на свою базу
 local teleportOffsetY = 3
 
