@@ -10,7 +10,7 @@ local bases = Workspace:WaitForChild("Bases")
 
 local originalPosition = hrp.Position -- 🧭 Точка возврата (твоя база)
 
--- 📢 Уведомления на экране
+-- 📢 Уведомления
 local function notify(text, color)
 	local gui = Instance.new("ScreenGui")
 	gui.ResetOnSpawn = false
@@ -34,7 +34,7 @@ local function notify(text, color)
 
 	TweenService:Create(label, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
 
-	task.delay(0.8, function()
+	task.delay(1.0, function()
 		TweenService:Create(label, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
 		task.wait(0.3)
 		gui:Destroy()
@@ -98,8 +98,10 @@ for _, base in ipairs(bases:GetChildren()) do
 						notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
 						teleportTo(pos + Vector3.new(0, 3, 0))
 
-						-- ⏱️ Находим и используем ProximityPrompt через 1 секунду
-						task.wait(1)
+						-- ⏱️ Подождать 0.3 сек для прогрузки
+						task.wait(0.3)
+
+						-- ⚙️ Использовать ProximityPrompt
 						local prompt = findNearestPrompt(pos, 18)
 						if prompt then
 							fireproximityprompt(prompt)
@@ -108,8 +110,8 @@ for _, base in ipairs(bases:GetChildren()) do
 							warn("❌ Промпт не найден")
 						end
 
-						-- 🏠 Возврат на базу через 0.5 сек после кражи
-						task.wait(0.5)
+						-- 🕐 Подождать 1.5 сек перед возвратом
+						task.wait(1.5)
 						notify("🏠 Возврат на базу...", Color3.fromRGB(255, 170, 0))
 						teleportTo(originalPosition + Vector3.new(0, 3, 0))
 
