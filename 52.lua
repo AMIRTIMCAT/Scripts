@@ -1,221 +1,182 @@
--- Instant Steal для Femboy игры
+-- Инструмент: Game Inspector (для отладки разработчика)
+-- Запускайте только в режиме Studio или если вы владелец/разработчик
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeamsService = game:GetService("Teams")
 local player = Players.LocalPlayer
 
--- Создаем UI кнопку
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "InstantStealUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+-- Настройка: id группы/список разработчиков, которым разрешено использовать инструмент
+local ALLOWED_USER_IDS = { -- пример: владельцы/тестеры
+    -- 12345678,  -- добавьте свои UserId по необходимости
+}
+local ALLOWED_GROUP_ID = nil -- если нужно разрешить участникам группы, укажите groupId или nil
 
-local stealButton = Instance.new("TextButton")
-stealButton.Name = "InstantStealButton"
-stealButton.Size = UDim2.new(0, 200, 0, 50)
-stealButton.Position = UDim2.new(0, 20, 0, 20)
-stealButton.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-stealButton.BorderSizePixel = 0
-stealButton.Text = "🎯 INSTANT STEAL FEMBOY"
-stealButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-stealButton.Font = Enum.Font.GothamBold
-stealButton.TextSize = 14
-stealButton.ZIndex = 10
-stealButton.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = stealButton
-
-local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(255, 20, 147)
-stroke.Thickness = 2
-stroke.Parent = stealButton
-
--- Функция поиска ближайшего Femboy
-local function findNearestFemboy()
-    local character = player.Character
-    if not character then return nil end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return nil end
-    
-    local playerPos = humanoidRootPart.Position
-    local nearestFemboy = nil
-    local nearestDistance = 50 -- Максимальная дистанция кражи
-    
-    -- Ищем Femboy по типам
-    local femboyTypes = {
-        "Cat Femboy",
-        "Bunny Femboy", 
-        "Employed Femboy"
-    }
-    
-    -- Ищем в workspace
-    for _, femboyType in pairs(femboyTypes) do
-        local femboy = workspace:FindFirstChild(femboyType)
-        if femboy then
-            local distance = (playerPos - femboy.Position).Magnitude
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestFemboy = femboy
-            end
+-- Быстрая проверка прав: владелец места или в списке разрешённых
+local function isDeveloper()
+    -- владелец места (CreatorId) доступен только в Studio/серверном коде обычно; проверим осторожно
+    local ok, creatorId = pcall(function()
+        return game.CreatorId
+    end)
+    if ok and creatorId and creatorId == player.UserId then
+        return true
+    end
+    for _, id in ipairs(ALLOWED_USER_IDS) do
+        if player.UserId == id then
+            return true
         end
     end
-    
-    -- Ищем всех детей workspace с Femboy в названии
-    for _, obj in pairs(workspace:GetChildren()) do
-        if string.find(obj.Name, "Femboy") then
-            local distance = (playerPos - obj.Position).Magnitude
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestFemboy = obj
-            end
-        end
+    if ALLOWED_GROUP_ID then
+        local ok2, isIn = pcall(function()
+            return player:IsInGroup(ALLOWED_GROUP_ID)
+        end)
+        if ok2 and isIn then return true end
     end
-    
-    return nearestFemboy
+    return false
 end
 
--- Функция поиска свободного слота на базе
-local function findFreeSlot()
-    -- Ищем базы (предполагаем структуру Workspace.Bases.Base1-8.Slots.Slot1-33)
-    for i = 1, 8 do
-        local baseName = "Base" .. i
-        local base = workspace:FindFirstChild("Bases")
-        if base then
-            base = base:FindFirstChild(baseName)
-            if base then
-                local slots = base:FindFirstChild("Slots")
-                if slots then
-                    -- Ищем свободный слот
-                    for j = 1, 33 do
-                        local slotName = "Slot" .. j
-                        local slot = slots:FindFirstChild(slotName)
-                        if slot then
-                            -- Проверяем пустой ли слот (нет Femboy внутри)
-                            local isEmpty = true
-                            for _, child in pairs(slot:GetChildren()) do
-                                if string.find(child.Name, "Femboy") then
-                                    isEmpty = false
-                                    break
-                                end
-                            end
-                            
-                            if isEmpty then
-                                return slot
-                            end
-                        end
-                    end
+if not isDeveloper() then
+    warn("[Inspector] Доступ запрещён. Этот инструмент доступен только разработчикам/владельцам.")
+    return
+end
+
+print("🔍 Game Inspector: запуск (только для отладки разработчика).")
+
+-- Паттерны (настраиваемые)
+local stealPatterns = { "brain", "femboy", "boy", "girl", "item", "flag", "coin", "crystal", "orb", "target", "objective", "collect", "steal" }
+local basePatterns = { "base", "spawn", "team", "home", "goal", "safe", "area", "zone", "slot", "point", "platform", "pedestal" }
+local eventPatterns = { "steal", "collect", "touch", "grab", "take", "capture", "return", "score", "point", "win", "success" }
+
+-- Нормализующая функция
+local function lowered(name)
+    if typeof(name) ~= "string" then return "" end
+    return string.lower(name)
+end
+
+-- Безопасное получение полного имени объекта
+local function safeFullName(obj)
+    local ok, res = pcall(function() return obj:GetFullName() end)
+    if ok then return res else return tostring(obj.ClassName .. " (unable to get path)") end
+end
+
+-- Поиск по контейнеру с заданными паттернами, возвращает список результатов
+local function scanContainer(container, patterns, resultType)
+    local results = {}
+    for _, obj in pairs(container:GetDescendants()) do
+        local lname = lowered(obj.Name)
+        for _, pat in ipairs(patterns) do
+            if pat ~= "" and string.find(lname, lowered(pat)) then
+                table.insert(results, {
+                    type = resultType,
+                    name = obj.Name,
+                    path = safeFullName(obj),
+                    class = obj.ClassName,
+                    instance = obj
+                })
+                break
+            end
+        end
+    end
+    return results
+end
+
+-- Главная функция поиска
+local function findObjectsByPatterns()
+    local found = {}
+
+    print("📁 Сканирование Workspace...")
+    local stealFound = scanContainer(Workspace, stealPatterns, "STEAL_OBJECT")
+    for _, v in ipairs(stealFound) do table.insert(found, v); print("  🔎 Цель: "..v.path.." ("..v.class..")") end
+
+    local baseFound = scanContainer(Workspace, basePatterns, "BASE_SPAWN")
+    for _, v in ipairs(baseFound) do table.insert(found, v); print("  🏠 База/Спавн: "..v.path.." ("..v.class..")") end
+
+    print("📁 Сканирование ReplicatedStorage...")
+    local eventFound = scanContainer(ReplicatedStorage, eventPatterns, "EVENT")
+    for _, v in ipairs(eventFound) do table.insert(found, v); print("  ⚡ Ивент: "..v.path.." ("..v.class..")") end
+
+    return found, stealFound, baseFound, eventFound
+end
+
+-- Ищем интерактивные элементы (Touch, Click, ProximityPrompt и т.д.)
+local function findInteractionEvents()
+    local interactions = {}
+    local interactionTypes = { "TouchInterest", "ClickDetector", "ProximityPrompt", "BillboardGui", "ClickDetector" }
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        for _, t in ipairs(interactionTypes) do
+            if obj.ClassName == t then
+                local parentName = safeFullName(obj.Parent or obj)
+                table.insert(interactions, {type = t, parent = parentName, instance = obj})
+                print("   "..t.." -> "..parentName)
+                if t == "ProximityPrompt" then
+                    local ok, actionText = pcall(function() return obj.ActionText end)
+                    local ok2, objectText = pcall(function() return obj.ObjectText end)
+                    print("     Action: "..tostring(actionText or "<n/a>").." | ObjectText: "..tostring(objectText or "<n/a>"))
                 end
             end
         end
     end
-    
-    -- Если не нашли слоты, ищем просто базу
-    local base = workspace:FindFirstChild("Base") or workspace:FindFirstChild("Spawn")
-    if base then
-        return base
-    end
-    
-    return nil
+    return interactions
 end
 
--- Главная функция Instant Steal
-local stealCooldown = false
+-- HUD: простая информация на экране (Client-only)
+local function createHUD(stealCount, baseCount, eventCount)
+    local success, screenGui = pcall(function()
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "GameInspectorHUD"
+        sg.ResetOnSpawn = false
 
-local function instantSteal()
-    if stealCooldown then return end
-    stealCooldown = true
-    
-    local character = player.Character
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then 
-        stealCooldown = false
-        return 
+        local frame = Instance.new("Frame", sg)
+        frame.AnchorPoint = Vector2.new(0, 1)
+        frame.Position = UDim2.new(0, 10, 1, -110)
+        frame.Size = UDim2.new(0, 260, 0, 90)
+        frame.BackgroundTransparency = 0.35
+        frame.BorderSizePixel = 0
+        frame.Name = "InspectorFrame"
+
+        local title = Instance.new("TextLabel", frame)
+        title.Size = UDim2.new(1, -10, 0, 24)
+        title.Position = UDim2.new(0, 5, 0, 5)
+        title.BackgroundTransparency = 1
+        title.TextScaled = true
+        title.Text = "Game Inspector (Dev)"
+        title.TextXAlignment = Enum.TextXAlignment.Left
+
+        local info = Instance.new("TextLabel", frame)
+        info.Size = UDim2.new(1, -10, 0, 60)
+        info.Position = UDim2.new(0,5,0,30)
+        info.BackgroundTransparency = 1
+        info.Text = string.format("Targets: %d\nBases: %d\nEvents: %d", stealCount, baseCount, eventCount)
+        info.TextXAlignment = Enum.TextXAlignment.Left
+        info.TextYAlignment = Enum.TextYAlignment.Top
+        info.TextWrapped = true
+
+        sg.Parent = player:FindFirstChildOfClass("PlayerGui") or game:GetService("StarterGui")
+        return sg
+    end)
+    if not success then
+        warn("[Inspector] Не удалось создать HUD: "..tostring(screenGui))
     end
-    
-    -- Визуальные эффекты
-    TweenService:Create(stealButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    }):Play()
-    stealButton.Text = "🎯 STEALING..."
-    
-    -- 1. Находим ближайшего Femboy
-    local targetFemboy = findNearestFemboy()
-    
-    if targetFemboy then
-        print("🎯 Найден Femboy: " .. targetFemboy.Name)
-        
-        -- 2. Телепортируемся к Femboy
-        humanoidRootPart.CFrame = CFrame.new(targetFemboy.Position + Vector3.new(0, 0, -3))
-        
-        -- 3. Симуляция кражи (возможно нужно вызвать ивент)
-        -- Если есть ивент CollectMoneySound - вызываем его
-        local collectEvent = game:GetService("ReplicatedStorage"):FindFirstChild("Events")
-        if collectEvent then
-            collectEvent = collectEvent:FindFirstChild("CollectMoneySound")
-            if collectEvent then
-                collectEvent:FireServer()
-            end
-        end
-        
-        -- 4. Находим свободный слот на базе
-        task.wait(0.3)
-        local freeSlot = findFreeSlot()
-        
-        if freeSlot then
-            -- 5. Телепортируем Femboy на базу
-            targetFemboy.CFrame = freeSlot.CFrame
-            
-            -- 6. Телепортируем себя на базу
-            humanoidRootPart.CFrame = freeSlot.CFrame + Vector3.new(0, 0, -5)
-            
-            stealButton.Text = "✅ STOLEN & RETURNED"
-            print("✅ Украл " .. targetFemboy.Name .. " и вернул на базу!")
-        else
-            -- Если слот не найден, просто телепортируемся на спавн
-            humanoidRootPart.CFrame = CFrame.new(0, 10, 0)
-            stealButton.Text = "✅ STOLEN"
-            print("✅ Украл " .. targetFemboy.Name)
-        end
-        
-        TweenService:Create(stealButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-        }):Play()
-        
-    else
-        stealButton.Text = "❌ NO FEMBOY FOUND"
-        TweenService:Create(stealButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(255, 69, 0)
-        }):Play()
-        print("❌ Femboy не найден рядом")
-    end
-    
-    task.wait(1)
-    
-    -- Возвращаем кнопку в исходное состояние
-    stealButton.Text = "🎯 INSTANT STEAL FEMBOY"
-    TweenService:Create(stealButton, TweenInfo.new(0.3), {
-        BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-    }):Play()
-    
-    -- КД 3 секунды
-    task.wait(2)
-    stealCooldown = false
 end
 
--- Обработчик кнопки
-stealButton.MouseButton1Click:Connect(instantSteal)
-
--- Адаптация для мобильных устройств
-if UserInputService.TouchEnabled then
-    stealButton.Size = UDim2.new(0, 220, 0, 60)
-    stealButton.TextSize = 16
+-- Мониторинг изменений для отладки (опционально)
+local function startEventMonitoring()
+    Workspace.ChildAdded:Connect(function(child)
+        print("[Workspace] Добавлен: "..tostring(child.Name))
+    end)
+    Workspace.ChildRemoved:Connect(function(child)
+        print("[Workspace] Удалён: "..tostring(child.Name))
+    end)
 end
 
-print("🎯 Instant Steal Femboy загружен!")
-print("🔍 Ищет: Cat Femboy, Bunny Femboy, Employed Femboy")
-print("🏠 Возвращает на свободные слоты Base1-8.Slot1-33")
+-- Основной запуск
+local allFound, stealFound, baseFound, eventFound = findObjectsByPatterns()
+local interactions = findInteractionEvents()
+startEventMonitoring()
+createHUD(#stealFound, #baseFound, #eventFound)
+
+print(string.rep("=", 40))
+print("Итоги: всего найдено элементов: "..#allFound)
+print("  Целей: "..#stealFound.." | Баз/спавнов: "..#baseFound.." | Ивентов: "..#eventFound)
+print("Интерактивных элементов: "..#interactions)
+print("Используйте этот инструмент только для тестирования и отладки вашей игры.")
