@@ -1,10 +1,10 @@
--- Настройки (можешь менять)
+-- ⚙️ Настройки (можешь менять)
 local waitAtTarget = 1        -- сколько сек стоять у модели до использования промпта
 local returnDelay = 0.5       -- сколько сек ждать после использования промпта перед возвратом
 local teleportOffsetY = 3     -- смещение по Y при телепорте
 local promptSearchDistance = 18
 
--- Сервисы
+-- 🧱 Сервисы
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -15,12 +15,13 @@ local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
 local basesFolder = Workspace:WaitForChild("Bases")
 
--- Уведомления
+-- 📢 Красивая функция уведомления
 local function notify(text, color)
-	local ok, err = pcall(function()
+	pcall(function()
 		local gui = Instance.new("ScreenGui")
 		gui.ResetOnSpawn = false
 		gui.IgnoreGuiInset = true
+		gui.Name = "StealNotify"
 		gui.Parent = player:WaitForChild("PlayerGui")
 
 		local label = Instance.new("TextLabel")
@@ -39,183 +40,129 @@ local function notify(text, color)
 		corner.Parent = label
 
 		TweenService:Create(label, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
-
-		task.delay(0.9, function()
-			TweenService:Create(label, TweenInfo.new(0.25), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
-			task.wait(0.3)
-			pcall(function() gui:Destroy() end)
-		end)
+		task.wait(1)
+		TweenService:Create(label, TweenInfo.new(0.25), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
+		task.wait(0.3)
+		gui:Destroy()
 	end)
-	if not ok then
-		warn("notify error:", err)
-	end
 end
 
--- Заморозка / разморозка (с сохранением старых значений)
+-- ❄️ Заморозка / разморозка
 local function freezeCharacter()
 	character:SetAttribute("savedWalkSpeed", humanoid.WalkSpeed)
 	character:SetAttribute("savedJumpPower", humanoid.JumpPower)
 	humanoid.WalkSpeed = 0
 	humanoid.JumpPower = 0
 end
-
 local function unfreezeCharacter()
-	local ws = character:GetAttribute("savedWalkSpeed") or 16
-	local jp = character:GetAttribute("savedJumpPower") or 50
-	humanoid.WalkSpeed = ws
-	humanoid.JumpPower = jp
-	character:SetAttribute("savedWalkSpeed", nil)
-	character:SetAttribute("savedJumpPower", nil)
+	humanoid.WalkSpeed = character:GetAttribute("savedWalkSpeed") or 16
+	humanoid.JumpPower = character:GetAttribute("savedJumpPower") or 50
 end
 
--- Телепорт
-local function teleportTo(position)
-	pcall(function()
-		humanoid:MoveTo(position)
-		hrp.CFrame = CFrame.new(position)
-	end)
+-- 🚀 Телепорт
+local function teleportTo(pos)
+	if pos then
+		hrp.CFrame = CFrame.new(pos)
+	end
 end
 
--- Поиск ближайшего ProximityPrompt
-local function findNearestPrompt(originPos, maxDistance)
-	local closestPrompt, minDist = nil, maxDistance or promptSearchDistance
+-- 🔍 Поиск ближайшего ProximityPrompt
+local function findNearestPrompt(originPos, maxDist)
+	local nearest, min = nil, maxDist or promptSearchDistance
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("ProximityPrompt") and obj.Enabled then
-			local parent = obj.Parent
-			if parent and parent:IsA("BasePart") then
-				local dist = (parent.Position - originPos).Magnitude
-				if dist < minDist then
-					minDist = dist
-					closestPrompt = obj
+			local part = obj.Parent
+			if part and part:IsA("BasePart") then
+				local dist = (part.Position - originPos).Magnitude
+				if dist < min then
+					min = dist
+					nearest = obj
 				end
 			end
 		end
 	end
-	return closestPrompt
+	return nearest
 end
 
--- Получить имя владельца базы из Configurationsa.Player
-local function getOwnerNameFromConfig(baseModel)
-	local cfg = baseModel:FindFirstChild("Configurationsa")
+-- 👤 Определить владельца базы
+local function getOwnerName(base)
+	local cfg = base:FindFirstChild("Configurationsa") or base:FindFirstChild("Configuration")
 	if not cfg then return nil end
+	local plrVal = cfg:FindFirstChild("Player")
+	if not plrVal then return nil end
 
-	-- Ищем объект Player внутри Configurationsa
-	local playerEntry = cfg:FindFirstChild("Player") or cfg:FindFirstChildWhichIsA("Value")
-	if not playerEntry then
-		for _, v in ipairs(cfg:GetDescendants()) do
-			if v:IsA("Value") and tostring(v.Name):lower():find("player") then
-				playerEntry = v
-				break
-			end
-		end
-	end
-
-	if not playerEntry then return nil end
-
-	-- Поддерживаем разные типы Value
-	if playerEntry:IsA("StringValue") or playerEntry:IsA("IntValue") or playerEntry:IsA("NumberValue") then
-		return tostring(playerEntry.Value)
-	elseif playerEntry:IsA("ObjectValue") and playerEntry.Value then
-		-- ObjectValue может хранить игрока/персонаж
-		local v = playerEntry.Value
-		-- если это игрок (редко), вернём имя
-		if v.IsA and v:IsA("Player") then
-			return v.Name
-		elseif v.Name then
-			return tostring(v.Name)
-		end
-	elseif playerEntry.Value then
-		return tostring(playerEntry.Value)
-	end
-
-	return nil
-end
-
--- Найти базу игрока по совпадению ника в Configurationsa.Player
-local function findPlayerBase()
-	for _, baseModel in ipairs(basesFolder:GetChildren()) do
-		if baseModel:IsA("Model") then
-			local ownerName = getOwnerNameFromConfig(baseModel)
-			if ownerName and ownerName == player.Name then
-				return baseModel
-			end
-		end
+	if plrVal:IsA("ObjectValue") and plrVal.Value then
+		return plrVal.Value.Name
+	elseif plrVal:IsA("StringValue") then
+		return tostring(plrVal.Value)
 	end
 	return nil
 end
 
--- Получить позицию Spawn.Base внутри базы
-local function getSpawnPositionFromBase(baseModel)
-	if not baseModel then return nil end
-	local spawn = baseModel:FindFirstChild("Spawn")
-	if spawn then
-		local basePart = spawn:FindFirstChild("Base")
-		if basePart and basePart:IsA("BasePart") then
-			return basePart.Position
-		end
-	end
-	return nil
-end
-
--- Основная логика: ищем femboy в чужих базах (пропуская свою)
-local function runStealRoutine()
-	local playerBase = findPlayerBase()
-	local returnPos = getSpawnPositionFromBase(playerBase) or hrp.Position
-
-	-- Проходим по всем базам, но пропускаем свою
+-- 🏠 Найти базу игрока
+local function findMyBase()
 	for _, base in ipairs(basesFolder:GetChildren()) do
-		if not base:IsA("Model") then
-			-- пропускаем если не модель
-		else
-			-- пропустить свою базу (если найдена)
-			if playerBase and base == playerBase then
-				-- пропускаем
-			else
-				-- работаем с чужой базой
+		if base:IsA("Model") then
+			local owner = getOwnerName(base)
+			if owner and owner == player.Name then
+				return base
+			end
+		end
+	end
+	return nil
+end
+
+-- 📍 Получить позицию Spawn.Base из базы
+local function getSpawnPos(base)
+	if not base then return nil end
+	local spawn = base:FindFirstChild("Spawn")
+	if not spawn then return nil end
+	local basePart = spawn:FindFirstChild("Base")
+	return basePart and basePart.Position or nil
+end
+
+-- 💰 Главная логика
+local function runStealRoutine()
+	local myBase = findMyBase()
+	local returnPos = getSpawnPos(myBase) or hrp.Position
+
+	if myBase then
+		notify("🏡 Найдена твоя база!", Color3.fromRGB(0, 255, 180))
+	end
+
+	for _, base in ipairs(basesFolder:GetChildren()) do
+		if base:IsA("Model") then
+			local owner = getOwnerName(base)
+			if owner ~= player.Name then
 				local slots = base:FindFirstChild("Slots")
 				if slots then
 					for _, slot in ipairs(slots:GetChildren()) do
 						for _, model in ipairs(slot:GetChildren()) do
-							if model:IsA("Model") and string.match(string.lower(model.Name), " femboy$") then
-								-- нашли цель в чужой базе
-								local pos
-								if model.PrimaryPart then
-									pos = model.PrimaryPart.Position
-								else
-									local part = model:FindFirstChildWhichIsA("BasePart", true)
-									pos = part and part.Position or Vector3.new(0,0,0)
+							if model:IsA("Model") and string.find(string.lower(model.Name), "femboy") then
+								-- нашёл цель
+								local pos = model.PrimaryPart and model.PrimaryPart.Position
+									or (model:FindFirstChildWhichIsA("BasePart", true) and model:FindFirstChildWhichIsA("BasePart", true).Position)
+								if pos then
+									freezeCharacter()
+									notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
+									teleportTo(pos + Vector3.new(0, teleportOffsetY, 0))
+									task.wait(waitAtTarget)
+
+									local prompt = findNearestPrompt(pos)
+									if prompt then
+										fireproximityprompt(prompt)
+										notify("💸 Украдено!", Color3.fromRGB(0, 200, 0))
+									else
+										notify("⚠️ Промпт не найден!", Color3.fromRGB(255, 100, 100))
+									end
+
+									task.wait(returnDelay)
+									notify("🏠 Возврат на базу...", Color3.fromRGB(255, 170, 0))
+									teleportTo(returnPos + Vector3.new(0, teleportOffsetY, 0))
+									task.wait(0.2)
+									unfreezeCharacter()
+									return
 								end
-
-								-- блокируем движение и телепортируемся
-								freezeCharacter()
-								notify("✨ Телепорт к цели...", Color3.fromRGB(0,170,255))
-								teleportTo(pos + Vector3.new(0, teleportOffsetY, 0))
-
-								-- ждем немного чтобы промпт прогрузился
-								task.wait(0.3)
-
-								-- стоим у цели указанное время, чтобы успеть сработать
-								task.wait(waitAtTarget - 0.3 >= 0 and (waitAtTarget - 0.3) or 0)
-
-								-- пробуем найти и использовать промпт
-								local prompt = findNearestPrompt(pos, promptSearchDistance)
-								if prompt then
-									pcall(function() fireproximityprompt(prompt) end)
-									notify("💸 Украдено!", Color3.fromRGB(0,200,0))
-								else
-									notify("⚠️ Промпт не найден", Color3.fromRGB(220,80,80))
-								end
-
-								-- ждем перед возвратом
-								task.wait(returnDelay)
-
-								-- возвращаемся на свою базу (или на последний hrp.pos)
-								notify("🏠 Возврат на базу...", Color3.fromRGB(255,170,0))
-								teleportTo(returnPos + Vector3.new(0, teleportOffsetY, 0))
-
-								task.wait(0.15)
-								unfreezeCharacter()
-								return
 							end
 						end
 					end
@@ -224,11 +171,11 @@ local function runStealRoutine()
 		end
 	end
 
-	warn("❌ Не найдено 'femboy' в чужих базах")
+	notify("❌ Цель не найдена!", Color3.fromRGB(255, 100, 100))
 end
 
--- Запуск (с маленькой задержкой чтобы всё прогрузилось)
-spawn(function()
-	task.wait(0.2)
+-- 🚦 Автозапуск
+task.spawn(function()
+	task.wait(0.3)
 	runStealRoutine()
 end)
