@@ -1,4 +1,4 @@
--- LocalScript: Femboy Stealer UI (Исправленная версия)
+-- LocalScript: Femboy Stealer UI (Упрощенная версия)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -8,29 +8,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 if not player then return end
-
--- === АВТОУСТАНОВКА (исправлено) ===
-local function autoInstall()
-    local ps = player:FindFirstChild("PlayerScripts")
-    if not ps then 
-        warn("⚠️ PlayerScripts не найден, пропускаем автоустановку")
-        return 
-    end
-    
-    if not ps:FindFirstChild("FemboyStealerUI") then
-        local clone = script:Clone()
-        clone.Name = "FemboyStealerUI"
-        clone.Parent = ps
-        print("✅ FemboyStealerUI установлен в PlayerScripts")
-        return true -- Флаг что мы только что установили
-    else
-        print("⚠️ FemboyStealerUI уже установлен — продолжаем выполнение")
-        return false
-    end
-end
-
--- Если только что установили, завершаем этот экземпляр
-if autoInstall() then return end
 
 -- === UI ===
 local playerGui = player:WaitForChild("PlayerGui")
@@ -132,7 +109,7 @@ local function showNotify(text, bg)
     end)
 end
 
--- === Drag система (исправлена) ===
+-- === Drag система ===
 do
     local dragging = false
     local dragInput
@@ -180,12 +157,10 @@ end
 local function getAnyBasePart(model)
     if not model then return nil end
     
-    -- Проверяем PrimaryPart
     if model.PrimaryPart and model.PrimaryPart:IsA("BasePart") then 
         return model.PrimaryPart 
     end
     
-    -- Ищем любую BasePart
     for _, d in ipairs(model:GetDescendants()) do
         if d:IsA("BasePart") then 
             return d 
@@ -246,19 +221,14 @@ local function teleportCharacterToPosition(pos)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
     
-    -- Обнуляем скорость
     pcall(function() 
         hrp.Velocity = Vector3.zero 
         hrp.AssemblyLinearVelocity = Vector3.zero
     end)
     
-    -- Телепортируем
     hrp.CFrame = CFrame.new(pos)
-    
-    -- Ждём физику
     RunService.Heartbeat:Wait()
     
-    -- Снова обнуляем
     pcall(function() 
         hrp.Velocity = Vector3.zero 
         hrp.AssemblyLinearVelocity = Vector3.zero
@@ -287,7 +257,7 @@ local function findPromptInModel(rootModel, originPos, maxDist)
     return best
 end
 
--- === Основная логика (исправлена) ===
+-- === Основная логика ===
 local isRunning = false
 
 local function stealAndReturn()
@@ -351,13 +321,20 @@ local function stealAndReturn()
     
     task.wait(0.3)
 
-    -- Ищем промпт
+    -- Ищем и активируем промпт
     local prompt = findPromptInModel(targetBase or targetModel, pos, 25)
     if prompt then
-        local success = pcall(function()
-            if typeof(fireproximityprompt) == "function" then
+        local success, err = pcall(function()
+            -- Безопасная проверка fireproximityprompt
+            local hasFirePrompt = false
+            pcall(function()
+                hasFirePrompt = typeof(fireproximityprompt) == "function"
+            end)
+            
+            if hasFirePrompt then
                 fireproximityprompt(prompt, 1)
             else
+                -- Альтернативный метод
                 prompt:InputHoldBegin()
                 task.wait(prompt.HoldDuration or 0.5)
                 prompt:InputHoldEnd()
@@ -367,7 +344,7 @@ local function stealAndReturn()
         if success then
             showNotify("💸 Промпт активирован!", Color3.fromRGB(70, 200, 100))
         else
-            showNotify("⚠️ Ошибка активации промпта", Color3.fromRGB(220, 120, 80))
+            showNotify("⚠️ Ошибка: " .. tostring(err), Color3.fromRGB(220, 120, 80))
         end
     else
         showNotify("⚠️ Промпт не найден", Color3.fromRGB(220, 120, 80))
@@ -437,5 +414,5 @@ if UserInputService.TouchEnabled then
     closeBtn.Position = UDim2.new(0, 20, 0, 110)
 end
 
-print("✅ FemboyStealerUI loaded successfully!")
+print("✅ FemboyStealerUI loaded!")
 showNotify("🚀 Скрипт активирован!", Color3.fromRGB(90, 180, 255))
