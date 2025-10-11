@@ -14,7 +14,7 @@ for _, base in ipairs(bases:GetChildren()) do
 					if model:IsA("Model") and string.match(string.lower(model.Name), " femboy$") then
 						local hrp = model:FindFirstChild("HumanoidRootPart")
 						if hrp then
-							character:MoveTo(hrp.Position + Vector3.new(0, 5, 0))
+							character:MoveTo(hrp.Position + Vector3.new(0, 0, 0))
 							print("✅ ТП к:", model.Name)
 							return
 						end
