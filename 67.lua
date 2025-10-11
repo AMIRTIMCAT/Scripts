@@ -1,5 +1,3 @@
--- LocalScript: Femboy Stealer UI (Упрощенная версия)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
@@ -9,10 +7,8 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 if not player then return end
 
--- === UI ===
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Удаляем старый UI если есть
 local oldGui = playerGui:FindFirstChild("FemboyStealerUI")
 if oldGui then oldGui:Destroy() end
 
@@ -70,7 +66,6 @@ closeBtn.TextSize = 14
 closeBtn.AutoButtonColor = true
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
 
--- === Уведомления ===
 local notifyLabel = Instance.new("TextLabel", gui)
 notifyLabel.Size = UDim2.new(0, 320, 0, 48)
 notifyLabel.Position = UDim2.new(0.5, -160, 0.15, 0)
@@ -109,7 +104,6 @@ local function showNotify(text, bg)
     end)
 end
 
--- === Drag система ===
 do
     local dragging = false
     local dragInput
@@ -153,7 +147,6 @@ do
     end)
 end
 
--- === Вспомогательные функции ===
 local function getAnyBasePart(model)
     if not model then return nil end
     
@@ -257,7 +250,6 @@ local function findPromptInModel(rootModel, originPos, maxDist)
     return best
 end
 
--- === Основная логика ===
 local isRunning = false
 
 local function stealAndReturn()
@@ -316,11 +308,9 @@ local function stealAndReturn()
     
     task.wait(0.3)
 
-    -- Ищем и активируем промпт
     local prompt = findPromptInModel(targetBase or targetModel, pos, 25)
     if prompt then
         local success, err = pcall(function()
-            -- Безопасная проверка fireproximityprompt
             local hasFirePrompt = false
             pcall(function()
                 hasFirePrompt = typeof(fireproximityprompt) == "function"
@@ -329,7 +319,6 @@ local function stealAndReturn()
             if hasFirePrompt then
                 fireproximityprompt(prompt, 1)
             else
-                -- Альтернативный метод
                 prompt:InputHoldBegin()
                 task.wait(prompt.HoldDuration or 0.5)
                 prompt:InputHoldEnd()
@@ -399,7 +388,6 @@ closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- === Адаптация для мобильных ===
 if UserInputService.TouchEnabled then
     frame.Size = UDim2.new(0, 340, 0, 160)
     frame.Position = UDim2.new(0.5, -170, 0.5, -80)
