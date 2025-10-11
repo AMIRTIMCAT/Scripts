@@ -8,9 +8,9 @@ local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
 local bases = Workspace:WaitForChild("Bases")
 
-local originalPosition = hrp.Position -- 🧭 Точка возврата
+local originalPosition = hrp.Position -- 🧭 запоминаем базу
 
--- 📢 Быстрое уведомление
+-- 📢 короткое уведомление
 local function notify(text, color)
 	local gui = Instance.new("ScreenGui")
 	gui.ResetOnSpawn = false
@@ -18,13 +18,13 @@ local function notify(text, color)
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 400, 0, 45)
-	label.Position = UDim2.new(0.5, -200, 0.12, 0)
+	label.Size = UDim2.new(0, 360, 0, 40)
+	label.Position = UDim2.new(0.5, -180, 0.12, 0)
 	label.BackgroundColor3 = color
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
-	label.BackgroundTransparency = 0.1
+	label.BackgroundTransparency = 0.15
 	label.Text = text
 	label.Parent = gui
 
@@ -32,41 +32,52 @@ local function notify(text, color)
 	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = label
 
-	TweenService:Create(label, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		BackgroundTransparency = 0
-	}):Play()
+	TweenService:Create(label, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
 
-	task.delay(0.6, function()
-		TweenService:Create(label, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
-		task.wait(0.3)
+	task.delay(0.4, function()
+		TweenService:Create(label, TweenInfo.new(0.25), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
+		task.wait(0.25)
 		gui:Destroy()
 	end)
 end
 
--- 🚀 Телепорт
+-- 🚫 заморозить игрока
+local function freezeCharacter()
+	humanoid.WalkSpeed = 0
+	humanoid.JumpPower = 0
+end
+
+-- ✅ разморозить игрока
+local function unfreezeCharacter()
+	humanoid.WalkSpeed = 16
+	humanoid.JumpPower = 50
+end
+
+-- 🚀 телепорт
 local function teleportTo(position)
 	humanoid:MoveTo(position)
 	hrp.CFrame = CFrame.new(position)
 end
 
--- 🔍 Поиск ближайшего ProximityPrompt
+-- 🔍 поиск промпта
 local function findNearestPrompt(originPos, maxDistance)
-	local prompt, distMin = nil, maxDistance or 15
+	local closestPrompt, minDist = nil, maxDistance or 15
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("ProximityPrompt") and obj.Enabled then
 			local parent = obj.Parent
 			if parent:IsA("BasePart") then
 				local dist = (parent.Position - originPos).Magnitude
-				if dist < distMin then
-					distMin, prompt = dist, obj
+				if dist < minDist then
+					minDist = dist
+					closestPrompt = obj
 				end
 			end
 		end
 	end
-	return prompt
+	return closestPrompt
 end
 
--- ⚡ Основное действие
+-- ⚡ основной код
 for _, base in ipairs(bases:GetChildren()) do
 	if base:IsA("Model") then
 		local slots = base:FindFirstChild("Slots")
@@ -82,21 +93,27 @@ for _, base in ipairs(bases:GetChildren()) do
 							pos = part and part.Position or Vector3.new(0, 0, 0)
 						end
 
-						-- ✨ Телепорт + уведомление
-						notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
-						teleportTo(pos + Vector3.new(0, 4, 0))
+						-- ❄️ замораживаем движение
+						freezeCharacter()
 
-						task.wait(0.15)
+						-- ✨ телепорт к цели
+						notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
+						teleportTo(pos + Vector3.new(0, 3, 0))
+
+						task.wait(0.1)
 						local prompt = findNearestPrompt(pos, 18)
 						if prompt then
 							fireproximityprompt(prompt)
 							notify("💸 Украдено!", Color3.fromRGB(0, 200, 0))
 						end
 
+						-- 🏠 возвращаемся на базу
 						task.wait(0.2)
 						notify("🏠 Возврат на базу!", Color3.fromRGB(255, 170, 0))
-						teleportTo(originalPosition + Vector3.new(0, 4, 0))
+						teleportTo(originalPosition + Vector3.new(0, 3, 0))
 
+						task.wait(0.1)
+						unfreezeCharacter() -- ✅ разморозить после возвращения
 						return
 					end
 				end
