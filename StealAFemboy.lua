@@ -1,110 +1,184 @@
--- Roblox LocalScript: Маленький переносимый UI с кнопкой закрытия
+-- Roblox LocalScript: Windows-style UI + безопасная проверка наличия XDAntiCheat.lua
+-- ВАЖНО: Скрипт НЕ удаляет файлы и не помогает обходить античит.
+-- Этот скрипт только проверяет существование файла по пути
+-- Workspace.StarterPlayer.StarterCharacterScripts.XDAntiCheat.lua (если такой есть)
+-- и отображает красивое уведомление: найдено / не найдено.
 -- Как использовать:
--- 1) Создайте LocalScript и вставьте этот код в StarterPlayerScripts или StarterGui.
--- 2) Скрипт автоматически создаст ScreenGui в PlayerGui и покажет окно.
--- 3) Окно можно перетаскивать за заголовок, и закрыть кнопку X (скрывает GUI).
+-- 1) Вставь этот LocalScript в StarterPlayerScripts или StarterGui.
+-- 2) Запусти игру. UI появится, выполнит проверку и покажет результат.
 
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Функция безопасной проверки (без удаления)
+local function checkAntiCheatPath()
+    local success, found = pcall(function()
+        local ws = game:GetService("Workspace")
+        if not ws then return nil end
+        local sp = ws:FindFirstChild("StarterPlayer")
+        if not sp then return nil end
+        local scs = sp:FindFirstChild("StarterCharacterScripts")
+        if not scs then return nil end
+        local xd = scs:FindFirstChild("XDAntiCheat.lua") or scs:FindFirstChild("XDAntiCheat")
+        -- Иногда объект может быть ModuleScript/Script без .lua в названии; проверяем оба варианта
+        return xd
+    end)
+    if not success then
+        return nil, "error"
+    end
+    if found then
+        return found, "found"
+    else
+        return nil, "not_found"
+    end
+end
+
 -- Создаём ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MiniUI"
+screenGui.Name = "WinStyleMiniUI"
 screenGui.ResetOnSpawn = false
-screenGui.DisplayOrder = 50
+screenGui.DisplayOrder = 100
 screenGui.Parent = playerGui
 
--- Основное окно
+-- Основное окно (фон)
 local frame = Instance.new("Frame")
 frame.Name = "Window"
-frame.Size = UDim2.new(0, 320, 0, 160)
-frame.Position = UDim2.new(0.35, 0, 0.35, 0)
-frame.AnchorPoint = Vector2.new(0, 0)
-frame.BackgroundColor3 = Color3.fromRGB(28, 28, 30)
+frame.Size = UDim2.new(0, 380, 0, 120)
+frame.Position = UDim2.new(0.5, -190, 0.4, -60)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.BackgroundColor3 = Color3.fromRGB(245, 246, 250) -- светлый Windows фон
 frame.BorderSizePixel = 0
+frame.ZIndex = 2
 frame.Parent = screenGui
 
--- Тень (легкая) - для эстетики
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 8)
-uiCorner.Parent = frame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = frame
 
+-- Тень
 local shadow = Instance.new("Frame")
 shadow.Name = "Shadow"
-shadow.Size = UDim2.new(1, 6, 1, 6)
-shadow.Position = UDim2.new(0, -3, 0, -3)
+shadow.Size = UDim2.new(1, 8, 1, 8)
+shadow.Position = UDim2.new(0, -4, 0, -4)
 shadow.BackgroundTransparency = 0.9
+shadow.ZIndex = 1
 shadow.Parent = frame
-shadow.ZIndex = 0
 
--- Панель заголовка (за неё можно тянуть)
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 32)
+titleBar.Size = UDim2.new(1, 0, 0, 36)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
-titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+titleBar.BackgroundColor3 = Color3.fromRGB(230, 232, 235)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = frame
 
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, -60, 1, 0)
-title.Position = UDim2.new(0, 12, 0, 0)
+title.Size = UDim2.new(1, -80, 1, 0)
+title.Position = UDim2.new(0, 16, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Маленькое окно"
-title.TextColor3 = Color3.fromRGB(240, 240, 240)
-title.Font = Enum.Font.SourceSansSemibold
-title.TextSize = 18
+title.Text = "Панель — Система"
+title.TextColor3 = Color3.fromRGB(24, 24, 27)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = titleBar
 
--- Кнопка закрытия
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "Close"
-closeBtn.Size = UDim2.new(0, 44, 0, 24)
-closeBtn.Position = UDim2.new(1, -54, 0, 4)
-closeBtn.AnchorPoint = Vector2.new(0, 0)
+closeBtn.Size = UDim2.new(0, 36, 0, 24)
+closeBtn.Position = UDim2.new(1, -48, 0, 6)
+closeBtn.BackgroundTransparency = 0
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
 closeBtn.Text = "✕"
-closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 18
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.BackgroundColor3 = Color3.fromRGB(175, 50, 60)
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
 closeBtn.BorderSizePixel = 0
 closeBtn.AutoButtonColor = true
 closeBtn.Parent = titleBar
 
--- Содержимое окна (пример)
+-- Content area
 local content = Instance.new("Frame")
 content.Name = "Content"
-content.Size = UDim2.new(1, -16, 1, -44)
-content.Position = UDim2.new(0, 8, 0, 36)
+content.Size = UDim2.new(1, -24, 1, -48)
+content.Position = UDim2.new(0, 12, 0, 44)
 content.BackgroundTransparency = 1
 content.Parent = frame
 
-local exampleLabel = Instance.new("TextLabel")
-exampleLabel.Size = UDim2.new(1, 0, 0, 24)
-exampleLabel.Position = UDim2.new(0, 0, 0, 0)
-exampleLabel.BackgroundTransparency = 1
-exampleLabel.Text = "Пример: маленький UI, перетаскиваемый за заголовок"
-exampleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-exampleLabel.Font = Enum.Font.SourceSans
-exampleLabel.TextSize = 14
-exampleLabel.TextWrapped = true
-exampleLabel.TextXAlignment = Enum.TextXAlignment.Left
-exampleLabel.Parent = content
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "Status"
+statusLabel.Size = UDim2.new(1, 0, 0, 48)
+statusLabel.Position = UDim2.new(0, 0, 0, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Проверка..."
+statusLabel.TextWrapped = true
+statusLabel.TextColor3 = Color3.fromRGB(30,30,30)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 15
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+statusLabel.Parent = content
 
--- Поведение кнопки закрытия
-closeBtn.MouseButton1Click:Connect(function()
-    screenGui.Enabled = false -- скрываем UI
+local hint = Instance.new("TextLabel")
+hint.Name = "Hint"
+hint.Size = UDim2.new(1, 0, 0, 20)
+hint.Position = UDim2.new(0, 0, 0, 52)
+hint.BackgroundTransparency = 1
+hint.Text = "Это безопасная проверка — ничего не удаляется."
+hint.TextColor3 = Color3.fromRGB(110,110,115)
+hint.Font = Enum.Font.Gotham
+hint.TextSize = 12
+hint.TextXAlignment = Enum.TextXAlignment.Left
+hint.Parent = content
+
+-- Иконка статуса (круг)
+local statusIcon = Instance.new("Frame")
+statusIcon.Name = "Icon"
+statusIcon.Size = UDim2.new(0, 40, 0, 40)
+statusIcon.Position = UDim2.new(1, -46, 0, 4)
+statusIcon.AnchorPoint = Vector2.new(0, 0)
+statusIcon.BackgroundColor3 = Color3.fromRGB(200,200,200)
+statusIcon.BorderSizePixel = 0
+statusIcon.Parent = frame
+local iconCorner = Instance.new("UICorner")
+iconCorner.CornerRadius = UDim.new(0, 8)
+iconCorner.Parent = statusIcon
+
+-- Анимация появления
+frame.Position = UDim2.new(0.5, -190, 0.2, -60)
+frame.BackgroundTransparency = 1
+spawn(function()
+    for i = 1, 10 do
+        frame.BackgroundTransparency = frame.BackgroundTransparency - 0.1
+        RunService.RenderStepped:Wait()
+    end
 end)
 
--- Сделаем окно перетаскиваемым за titleBar (работает для мыши на ПК)
+-- Функция для отображения результата
+local function showResult(state, obj)
+    if state == "found" then
+        statusLabel.Text = "✅ Anti-Cheat найден: " .. (obj.Name or "(без имени)")
+        statusIcon.BackgroundColor3 = Color3.fromRGB(94, 165, 255) -- синий
+    elseif state == "not_found" then
+        statusLabel.Text = "ℹ️ Anti-Cheat не найден в указанном пути."
+        statusIcon.BackgroundColor3 = Color3.fromRGB(200,200,200)
+    else
+        statusLabel.Text = "⚠️ Произошла ошибка при проверке."
+        statusIcon.BackgroundColor3 = Color3.fromRGB(220,140,140)
+    end
+end
+
+-- Делаем окно перетаскиваемым за titleBar
 local dragging = false
-local dragInput
-local dragStart
-local startPos
+local dragInput, dragStart, startPos
 
 local function update(input)
     local delta = input.Position - dragStart
@@ -141,38 +215,37 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Поддержка сенсорных экранов (при желании можно убрать)
--- Для сенсора используем Touch
-local touchDragging = false
-local touchStart
-
-titleBar.TouchStarted:Connect(function(touch, gpe)
-    touchDragging = true
-    touchStart = touch.Position
-    startPos = frame.Position
+-- Закрытие
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui.Enabled = false
 end)
 
-UserInputService.TouchMoved:Connect(function(touch, gpe)
-    if touchDragging then
-        local delta = touch.Position - touchStart
-        frame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+-- Горячая клавиша для скрытия (RightControl)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        screenGui.Enabled = not screenGui.Enabled
     end
 end)
 
-titleBar.TouchEnded:Connect(function(touch, gpe)
-    touchDragging = false
-end)
+-- Запускаем проверку и показываем результат
+spawn(function()
+    local obj, state = checkAntiCheatPath()
+    if state == "found" then
+        showResult("found", obj)
+    elseif state == "not_found" then
+        showResult("not_found")
+    else
+        showResult("error")
+    end
 
--- Дополнительно: горячая клавиша для открытия (пример: RightControl)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.RightControl then
-        screenGui.Enabled = not screenGui.Enabled
+    -- Оставляем сообщение на экране 4 секунды, затем плавно скрываем текст (не удаляем окно полностью)
+    wait(4)
+    -- Плавное скрытие текста
+    for i = 1, 10 do
+        statusLabel.TextTransparency = statusLabel.TextTransparency + 0.1
+        hint.TextTransparency = hint.TextTransparency + 0.1
+        RunService.RenderStepped:Wait()
     end
 end)
 
