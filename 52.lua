@@ -1,3 +1,6 @@
+-- LocalScript: Femboy Stealer UI (Auto-install, Fixed, Safe)
+-- Если запущен через executor, сам установит себя в PlayerScripts
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
@@ -7,7 +10,18 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 if not player then return end
 
--- UI
+-- === АВТОУСТАНОВКА ===
+local ps = player:WaitForChild("PlayerScripts")
+if not ps:FindFirstChild("FemboyStealerUI") then
+	local clone = script:Clone()
+	clone.Name = "FemboyStealerUI"
+	clone.Parent = ps
+	print("✅ FemboyStealerUI установлен в PlayerScripts")
+else
+	print("⚠️ FemboyStealerUI уже установлен — продолжаем выполнение")
+end
+
+-- === UI ===
 local gui = Instance.new("ScreenGui")
 gui.Name = "FemboyStealerUI"
 gui.ResetOnSpawn = false
@@ -19,7 +33,7 @@ frame.Position = UDim2.new(0.5, -130, 0.5, -70)
 frame.BackgroundColor3 = Color3.fromRGB(18,18,24)
 frame.BorderSizePixel = 0
 frame.Active = true
-frame.Draggable = false -- отключено, используем свой drag
+frame.Draggable = false
 frame.Parent = gui
 
 local corner = Instance.new("UICorner", frame)
@@ -46,8 +60,7 @@ stealBtn.Text = "🌀 Украсть и вернуться"
 stealBtn.TextColor3 = Color3.fromRGB(240,240,240)
 stealBtn.Font = Enum.Font.GothamBold
 stealBtn.TextSize = 16
-local stealCorner = Instance.new("UICorner", stealBtn)
-stealCorner.CornerRadius = UDim.new(0,8)
+Instance.new("UICorner", stealBtn).CornerRadius = UDim.new(0,8)
 
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(1, -40, 0, 36)
@@ -57,10 +70,9 @@ closeBtn.Text = "🔘 Закрыть"
 closeBtn.TextColor3 = Color3.fromRGB(255,200,200)
 closeBtn.Font = Enum.Font.GothamSemibold
 closeBtn.TextSize = 14
-local closeCorner = Instance.new("UICorner", closeBtn)
-closeCorner.CornerRadius = UDim.new(0,8)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
 
--- notify
+-- === Уведомления ===
 local notifyLabel = Instance.new("TextLabel", gui)
 notifyLabel.Size = UDim2.new(0,320,0,48)
 notifyLabel.Position = UDim2.new(0.5, -160, 0.15, 0)
@@ -71,8 +83,7 @@ notifyLabel.Font = Enum.Font.GothamBold
 notifyLabel.TextSize = 16
 notifyLabel.Text = ""
 notifyLabel.Visible = false
-local notifyCorner = Instance.new("UICorner", notifyLabel)
-notifyCorner.CornerRadius = UDim.new(0,10)
+Instance.new("UICorner", notifyLabel).CornerRadius = UDim.new(0,10)
 
 local function showNotify(text, bg)
 	notifyLabel.Text = text
@@ -88,7 +99,7 @@ local function showNotify(text, bg)
 	end)
 end
 
--- Drag (поддержка ПК и мобилы)
+-- === Drag (ПК + мобилки) ===
 do
 	local dragging, dragInput, dragStart, startPos
 
@@ -127,7 +138,7 @@ do
 	end)
 end
 
--- Utility: безопасно получить child which is BasePart
+-- === Вспомогательные функции ===
 local function getAnyBasePart(model)
 	if not model then return nil end
 	if model.PrimaryPart and model.PrimaryPart:IsA("BasePart") then return model.PrimaryPart end
@@ -137,36 +148,24 @@ local function getAnyBasePart(model)
 	return nil
 end
 
--- Получаем мою базу
 local function findMyBase()
 	local basesFolder = Workspace:FindFirstChild("Bases")
 	if not basesFolder then return nil end
 	for _, base in ipairs(basesFolder:GetChildren()) do
-		if base:IsA("Model") then
-			local cfg = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
-			if cfg then
-				local pv = cfg:FindFirstChild("Player")
-				if pv then
-					local val = pv.Value
-					if val == player then
-						return base
-					elseif type(val) == "Instance" and val.Name == player.Name then
-						return base
-					elseif pv:IsA("StringValue") and pv.Value == player.Name then
-						return base
-					end
-				end
+		local cfg = base:FindFirstChild("Configuration") or base:FindFirstChild("Configurationsa")
+		if cfg then
+			local pv = cfg:FindFirstChild("Player")
+			if pv then
+				if pv.Value == player or pv.Value == player.Name then return base end
 			end
 		end
 	end
 	return nil
 end
 
--- найти модель, где имя заканчивается на "femboy" или имя точно "roommate"
 local function findEnemyFemboy(myBase)
 	local basesFolder = Workspace:FindFirstChild("Bases")
 	if not basesFolder then return nil end
-
 	for _, base in ipairs(basesFolder:GetChildren()) do
 		if base:IsA("Model") and base ~= myBase then
 			local slots = base:FindFirstChild("Slots")
@@ -174,10 +173,8 @@ local function findEnemyFemboy(myBase)
 				for _, slot in ipairs(slots:GetChildren()) do
 					for _, m in ipairs(slot:GetChildren()) do
 						if m:IsA("Model") then
-							local nameLow = tostring(m.Name):lower()
-							local endsWithFemboy = string.sub(nameLow, -6) == "femboy"
-							local isRoommateExact = nameLow == "roommate"
-							if endsWithFemboy or isRoommateExact then
+							local n = m.Name:lower()
+							if n:find("femboy") or n == "roommate" then
 								return m, base
 							end
 						end
@@ -186,19 +183,26 @@ local function findEnemyFemboy(myBase)
 			end
 		end
 	end
-	return nil, nil
+	return nil
 end
 
--- Найти ближайший ProximityPrompt
+local function teleportCharacterToPosition(pos)
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	pcall(function() hrp.Velocity = Vector3.zero end)
+	hrp.CFrame = CFrame.new(pos)
+	RunService.Heartbeat:Wait()
+	pcall(function() hrp.Velocity = Vector3.zero end)
+end
+
 local function findPromptInModel(rootModel, originPos, maxDist)
-	if not rootModel then return nil end
 	local best, bestD
 	maxDist = maxDist or 20
 	for _,desc in ipairs(rootModel:GetDescendants()) do
 		if desc:IsA("ProximityPrompt") and desc.Enabled then
-			local parent = desc.Parent
-			if parent and parent:IsA("BasePart") then
-				local d = (parent.Position - originPos).Magnitude
+			local part = desc.Parent
+			if part and part:IsA("BasePart") then
+				local d = (part.Position - originPos).Magnitude
 				if d <= maxDist and (not bestD or d < bestD) then
 					best = desc
 					bestD = d
@@ -209,65 +213,52 @@ local function findPromptInModel(rootModel, originPos, maxDist)
 	return best
 end
 
--- телепорт HRP
-local function teleportCharacterToPosition(pos)
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
-	if hrp then
-		pcall(function() hrp.Velocity = Vector3.new(0,0,0) end)
-		hrp.CFrame = CFrame.new(pos)
-		RunService.Heartbeat:Wait()
-		pcall(function() hrp.Velocity = Vector3.new(0,0,0) end)
-	end
-end
-
--- главный процесс
+-- === Основная логика ===
 local function stealAndReturn()
 	stealBtn.Active = false
 	stealBtn.Text = "⏳ Выполняется..."
 
 	local char = player.Character or player.CharacterAdded:Wait()
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local hrp = char:WaitForChild("HumanoidRootPart")
 
 	local myBase = findMyBase()
 	if not myBase then
 		showNotify("⚠️ Своя база не найдена!", Color3.fromRGB(200,80,80))
-		goto endRoutine
+		goto done
 	end
 
 	local targetModel, targetBase = findEnemyFemboy(myBase)
 	if not targetModel then
 		showNotify("❌ Не найдено femboy/roommate!", Color3.fromRGB(200,80,80))
-		goto endRoutine
+		goto done
 	end
 
 	local part = getAnyBasePart(targetModel)
-	local targetPos
-	if part then targetPos = part.Position + Vector3.new(0, 3, 0)
-	elseif targetModel.GetModelCFrame then
-		local ok, cf = pcall(function() return targetModel:GetModelCFrame() end)
-		if ok and cf then targetPos = cf.p + Vector3.new(0,3,0) end
-	end
-	if not targetPos then
+	local pos = part and (part.Position + Vector3.new(0,3,0))
+	if not pos then
 		showNotify("⚠️ Не удалось определить позицию цели", Color3.fromRGB(200,80,80))
-		goto endRoutine
+		goto done
 	end
 
-	local savedWalk = {}
-	if humanoid then
-		savedWalk = {WalkSpeed = humanoid.WalkSpeed, JumpPower = humanoid.JumpPower}
-		humanoid.WalkSpeed = 0
-		humanoid.JumpPower = 0
-	end
+	local saved = {hum.WalkSpeed, hum.JumpPower}
+	hum.WalkSpeed = 0 hum.JumpPower = 0
 
 	showNotify("✨ Телепорт к цели...", Color3.fromRGB(80,120,220))
-	teleportCharacterToPosition(targetPos)
-	task.wait(0.15)
+	teleportCharacterToPosition(pos)
+	task.wait(0.25)
 
-	local prompt = findPromptInModel(targetBase or targetModel, targetPos, 20)
+	local prompt = findPromptInModel(targetBase or targetModel, pos, 20)
 	if prompt then
-		pcall(function() fireproximityprompt(prompt) end)
+		pcall(function()
+			if typeof(fireproximityprompt) == "function" then
+				fireproximityprompt(prompt)
+			else
+				prompt:InputHoldBegin()
+				task.wait(prompt.HoldDuration or 0.5)
+				prompt:InputHoldEnd()
+			end
+		end)
 		showNotify("💸 Промпт активирован!", Color3.fromRGB(70,200,100))
 	else
 		showNotify("⚠️ Промпт не найден у цели", Color3.fromRGB(220,120,80))
@@ -276,56 +267,41 @@ local function stealAndReturn()
 	task.wait(1)
 
 	local spawn = myBase:FindFirstChild("Spawn")
-	local spawnPos
-	if spawn then
-		if spawn:IsA("BasePart") then spawnPos = spawn.Position
-		else
-			local basePart = spawn:FindFirstChild("Base")
-			if basePart and basePart:IsA("BasePart") then
-				spawnPos = basePart.Position
-			end
-		end
-	end
-
+	local spawnPos = spawn and (spawn:IsA("BasePart") and spawn.Position or spawn:FindFirstChild("Base") and spawn.Base.Position)
 	if spawnPos then
 		showNotify("🔁 Возврат на базу...", Color3.fromRGB(100,140,220))
 		teleportCharacterToPosition(spawnPos + Vector3.new(0,3,0))
 		task.wait(0.25)
 		showNotify("🏠 Вы вернулись!", Color3.fromRGB(80,200,120))
-	else
-		showNotify("⚠️ Spawn не найден", Color3.fromRGB(200,120,80))
 	end
 
-	if humanoid and savedWalk then
-		humanoid.WalkSpeed = savedWalk.WalkSpeed or 16
-		humanoid.JumpPower = savedWalk.JumpPower or humanoid.JumpPower
-	end
+	hum.WalkSpeed, hum.JumpPower = saved[1], saved[2]
 
-	::endRoutine::
+	::done::
 	stealBtn.Text = "🌀 Украсть и вернуться"
 	stealBtn.Active = true
 end
 
 stealBtn.MouseButton1Click:Connect(function()
-	if not stealBtn.Active then return end
-	task.spawn(function()
-		local ok, err = pcall(stealAndReturn)
-		if not ok then
-			warn("stealAndReturn error:", err)
-			showNotify("❌ Ошибка: "..tostring(err), Color3.fromRGB(220,80,80))
-		end
-	end)
+	if stealBtn.Active then
+		task.spawn(function()
+			local ok, err = pcall(stealAndReturn)
+			if not ok then
+				showNotify("❌ Ошибка: "..tostring(err), Color3.fromRGB(220,80,80))
+			end
+		end)
+	end
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
 	gui:Destroy()
 end)
 
--- Mobile tweak
 if UserInputService.TouchEnabled then
 	frame.Size = UDim2.new(0, 340, 0, 160)
 	stealBtn.Size = UDim2.new(1, -40, 0, 54)
 	closeBtn.Size = UDim2.new(1, -40, 0, 44)
 end
 
-print("✅ FemboyStealerUI loaded with drag + mobile support.")
+print("✅ FemboyStealerUI loaded and auto-installed.")
+showNotify("🚀 Скрипт активирован!", Color3.fromRGB(90,180,255))
