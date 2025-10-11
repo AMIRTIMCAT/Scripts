@@ -1,10 +1,9 @@
--- Самый простой способ
-if game.StarterPlayer.StarterCharacterScripts:FindFirstChild("XDAntiCheat") then
-    game.StarterPlayer.StarterCharacterScripts.XDAntiCheat:Destroy()
-    print("XDAntiCheat удален!")
-end
+-- Удаляем несколько скриптов
+local scriptsToDelete = {"XDAntiCheat", "Anti"}
 
-if game.StarterPlayer.StarterCharacterScripts:FindFirstChild("Anti") then
-    game.StarterPlayer.StarterCharacterScripts.XDAntiCheat:Destroy()
-    print("Anti удален!")
+for _, scriptName in pairs(scriptsToDelete) do
+    if game.StarterPlayer.StarterCharacterScripts:FindFirstChild(scriptName) then
+        game.StarterPlayer.StarterCharacterScripts[scriptName]:Destroy()
+        print(scriptName .. " удален!")
+    end
 end
