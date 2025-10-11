@@ -6,25 +6,25 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
-
 local bases = Workspace:WaitForChild("Bases")
-local originalPosition = hrp.Position -- 🧭 Запоминаем точку возврата
+
+local originalPosition = hrp.Position -- 🧭 Точка возврата
 
 -- 📢 Быстрое уведомление
-local function createNotification(text, color)
+local function notify(text, color)
 	local gui = Instance.new("ScreenGui")
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 400, 0, 50)
-	label.Position = UDim2.new(0.5, -200, 0.1, 0)
+	label.Size = UDim2.new(0, 400, 0, 45)
+	label.Position = UDim2.new(0.5, -200, 0.12, 0)
 	label.BackgroundColor3 = color
-	label.BackgroundTransparency = 0.15
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
+	label.BackgroundTransparency = 0.1
 	label.Text = text
 	label.Parent = gui
 
@@ -32,13 +32,13 @@ local function createNotification(text, color)
 	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = label
 
-	TweenService:Create(label, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		BackgroundTransparency = 0.05
+	TweenService:Create(label, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 0
 	}):Play()
 
-	task.delay(1.2, function()
+	task.delay(0.6, function()
 		TweenService:Create(label, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
-		task.wait(0.4)
+		task.wait(0.3)
 		gui:Destroy()
 	end)
 end
@@ -51,22 +51,22 @@ end
 
 -- 🔍 Поиск ближайшего ProximityPrompt
 local function findNearestPrompt(originPos, maxDistance)
-	local closestPrompt, closestDist = nil, maxDistance or 15
+	local prompt, distMin = nil, maxDistance or 15
 	for _, obj in ipairs(Workspace:GetDescendants()) do
 		if obj:IsA("ProximityPrompt") and obj.Enabled then
 			local parent = obj.Parent
 			if parent:IsA("BasePart") then
 				local dist = (parent.Position - originPos).Magnitude
-				if dist < closestDist then
-					closestPrompt, closestDist = obj, dist
+				if dist < distMin then
+					distMin, prompt = dist, obj
 				end
 			end
 		end
 	end
-	return closestPrompt
+	return prompt
 end
 
--- ⚡ Основной код
+-- ⚡ Основное действие
 for _, base in ipairs(bases:GetChildren()) do
 	if base:IsA("Model") then
 		local slots = base:FindFirstChild("Slots")
@@ -78,30 +78,25 @@ for _, base in ipairs(bases:GetChildren()) do
 						if model.PrimaryPart then
 							pos = model.PrimaryPart.Position
 						else
-							local firstPart = model:FindFirstChildWhichIsA("BasePart", true)
-							pos = firstPart and firstPart.Position or Vector3.new(0, 0, 0)
+							local part = model:FindFirstChildWhichIsA("BasePart", true)
+							pos = part and part.Position or Vector3.new(0, 0, 0)
 						end
 
-						-- ✨ Телепорт
-						createNotification("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
+						-- ✨ Телепорт + уведомление
+						notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
 						teleportTo(pos + Vector3.new(0, 4, 0))
-						
-						task.wait(0.15) -- чуть-чуть подождать для прогрузки
 
-						-- 💸 Активируем ProximityPrompt
+						task.wait(0.15)
 						local prompt = findNearestPrompt(pos, 18)
 						if prompt then
 							fireproximityprompt(prompt)
-							createNotification("💸 Украдено!", Color3.fromRGB(0, 200, 0))
-						else
-							createNotification("⚠️ Промпт не найден!", Color3.fromRGB(255, 80, 80))
+							notify("💸 Украдено!", Color3.fromRGB(0, 200, 0))
 						end
 
-						-- 🏠 Возвращение
-						task.wait(0.4)
-						createNotification("🏠 Возврат на базу!", Color3.fromRGB(255, 170, 0))
+						task.wait(0.2)
+						notify("🏠 Возврат на базу!", Color3.fromRGB(255, 170, 0))
 						teleportTo(originalPosition + Vector3.new(0, 4, 0))
-						
+
 						return
 					end
 				end
