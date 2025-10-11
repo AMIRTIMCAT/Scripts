@@ -158,3 +158,4 @@ if game:GetService("UserInputService").TouchEnabled then
 end
 
 print("✅ Скрипт 'Украсть и вернуться' загружен!")
+
