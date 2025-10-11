@@ -1,10 +1,11 @@
--- LocalScript: Femboy Stealer UI (Fixed)
+-- LocalScript: Femboy Stealer UI (Fixed + Drag + Mobile Support)
 -- ПОЛОЖИ В StarterPlayer > StarterPlayerScripts
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -20,6 +21,8 @@ frame.Size = UDim2.new(0, 260, 0, 140)
 frame.Position = UDim2.new(0.5, -130, 0.5, -70)
 frame.BackgroundColor3 = Color3.fromRGB(18,18,24)
 frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = false -- отключено, используем свой drag
 frame.Parent = gui
 
 local corner = Instance.new("UICorner", frame)
@@ -36,6 +39,7 @@ title.Text = "🌀 Украсть и вернуться"
 title.TextColor3 = Color3.fromRGB(230,230,230)
 title.Font = Enum.Font.GothamSemibold
 title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
 
 local stealBtn = Instance.new("TextButton", frame)
 stealBtn.Size = UDim2.new(1, -40, 0, 44)
@@ -87,19 +91,56 @@ local function showNotify(text, bg)
 	end)
 end
 
+-- Drag (поддержка ПК и мобилы)
+do
+	local dragging, dragInput, dragStart, startPos
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+
+	title.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	title.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			update(input)
+		end
+	end)
+end
+
 -- Utility: безопасно получить child which is BasePart
 local function getAnyBasePart(model)
 	if not model then return nil end
-	-- try PrimaryPart
 	if model.PrimaryPart and model.PrimaryPart:IsA("BasePart") then return model.PrimaryPart end
-	-- search descendants
 	for _,d in ipairs(model:GetDescendants()) do
 		if d:IsA("BasePart") then return d end
 	end
 	return nil
 end
 
--- Получаем мою базу (проверка ObjectValue/ StringValue)
+-- Получаем мою базу
 local function findMyBase()
 	local basesFolder = Workspace:FindFirstChild("Bases")
 	if not basesFolder then return nil end
@@ -109,7 +150,6 @@ local function findMyBase()
 			if cfg then
 				local pv = cfg:FindFirstChild("Player")
 				if pv then
-					-- ObjectValue -> pv.Value could be Player object or Model
 					local val = pv.Value
 					if val == player then
 						return base
@@ -125,21 +165,22 @@ local function findMyBase()
 	return nil
 end
 
--- найти модель femboy в чужих базах (не трогать свою)
+-- найти модель, где имя заканчивается на "femboy" или имя точно "roommate"
 local function findEnemyFemboy(myBase)
 	local basesFolder = Workspace:FindFirstChild("Bases")
 	if not basesFolder then return nil end
+
 	for _, base in ipairs(basesFolder:GetChildren()) do
 		if base:IsA("Model") and base ~= myBase then
-			-- owner check: skip if owner == player
-			-- we'll still skip because base ~= myBase
 			local slots = base:FindFirstChild("Slots")
 			if slots then
 				for _, slot in ipairs(slots:GetChildren()) do
 					for _, m in ipairs(slot:GetChildren()) do
 						if m:IsA("Model") then
 							local nameLow = tostring(m.Name):lower()
-							if string.find(nameLow, " femboy") or string.find(nameLow, "femboy") then
+							local endsWithFemboy = string.sub(nameLow, -6) == "femboy"
+							local isRoommateExact = nameLow == "roommate"
+							if endsWithFemboy or isRoommateExact then
 								return m, base
 							end
 						end
@@ -151,7 +192,7 @@ local function findEnemyFemboy(myBase)
 	return nil, nil
 end
 
--- Найти ближайший ProximityPrompt внутри указанной модели/базы
+-- Найти ближайший ProximityPrompt
 local function findPromptInModel(rootModel, originPos, maxDist)
 	if not rootModel then return nil end
 	local best, bestD
@@ -171,118 +212,76 @@ local function findPromptInModel(rootModel, originPos, maxDist)
 	return best
 end
 
--- телепорт HRP надежно
+-- телепорт HRP
 local function teleportCharacterToPosition(pos)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
 	if hrp then
-		-- остановим движение
 		pcall(function() hrp.Velocity = Vector3.new(0,0,0) end)
 		hrp.CFrame = CFrame.new(pos)
-		-- небольшой шаг, чтобы физика подхватила
 		RunService.Heartbeat:Wait()
 		pcall(function() hrp.Velocity = Vector3.new(0,0,0) end)
 	end
 end
 
--- главный рутин
+-- главный процесс
 local function stealAndReturn()
-	-- защита от двойного нажатия
 	stealBtn.Active = false
 	stealBtn.Text = "⏳ Выполняется..."
 
-	-- обновим character
 	local char = player.Character or player.CharacterAdded:Wait()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
 
-	-- найти мою базу
 	local myBase = findMyBase()
 	if not myBase then
 		showNotify("⚠️ Своя база не найдена!", Color3.fromRGB(200,80,80))
-		stealBtn.Text = "🌀 Украсть и вернуться"
-		stealBtn.Active = true
-		return
+		goto endRoutine
 	end
 
-	-- найти цель в чужих базах
 	local targetModel, targetBase = findEnemyFemboy(myBase)
 	if not targetModel then
-		showNotify("❌ Не найдено femboy в чужих базах!", Color3.fromRGB(200,80,80))
-		stealBtn.Text = "🌀 Украсть и вернуться"
-		stealBtn.Active = true
-		return
+		showNotify("❌ Не найдено femboy/roommate!", Color3.fromRGB(200,80,80))
+		goto endRoutine
 	end
 
-	-- получаем позицию цели
 	local part = getAnyBasePart(targetModel)
 	local targetPos
-	if part then
-		targetPos = part.Position + Vector3.new(0, 3, 0)
-	else
-		-- fallback: try model CFrame
+	if part then targetPos = part.Position + Vector3.new(0, 3, 0)
+	elseif targetModel.GetModelCFrame then
 		local ok, cf = pcall(function() return targetModel:GetModelCFrame() end)
 		if ok and cf then targetPos = cf.p + Vector3.new(0,3,0) end
 	end
 	if not targetPos then
 		showNotify("⚠️ Не удалось определить позицию цели", Color3.fromRGB(200,80,80))
-		stealBtn.Text = "🌀 Украсть и вернуться"
-		stealBtn.Active = true
-		return
+		goto endRoutine
 	end
 
-	-- заморозить игрока (устойчиво)
-	local savedWalk = nil
+	local savedWalk = {}
 	if humanoid then
 		savedWalk = {WalkSpeed = humanoid.WalkSpeed, JumpPower = humanoid.JumpPower}
 		humanoid.WalkSpeed = 0
 		humanoid.JumpPower = 0
 	end
 
-	-- телепортируемся к цели
 	showNotify("✨ Телепорт к цели...", Color3.fromRGB(80,120,220))
 	teleportCharacterToPosition(targetPos)
-
-	-- даём 0.15с чтобы всё прогрузилось
 	task.wait(0.15)
 
-	-- ищем промпт внутри targetBase ближе всего к позиции
 	local prompt = findPromptInModel(targetBase or targetModel, targetPos, 20)
 	if prompt then
-		-- безопасно вызовем
 		pcall(function() fireproximityprompt(prompt) end)
 		showNotify("💸 Промпт активирован!", Color3.fromRGB(70,200,100))
 	else
-		-- fallback: ищем любой промпт в мире рядом
-		local anyPrompt
-		for _,desc in ipairs(Workspace:GetDescendants()) do
-			if desc:IsA("ProximityPrompt") then
-				if desc.Parent and desc.Parent:IsA("BasePart") then
-					if (desc.Parent.Position - targetPos).Magnitude <= 6 then
-						anyPrompt = desc
-						break
-					end
-				end
-			end
-		end
-		if anyPrompt then
-			pcall(function() fireproximityprompt(anyPrompt) end)
-			showNotify("💸 Промпт (fallback) активирован!", Color3.fromRGB(70,200,100))
-		else
-			showNotify("⚠️ Промпт не найден у цели", Color3.fromRGB(220,120,80))
-		end
+		showNotify("⚠️ Промпт не найден у цели", Color3.fromRGB(220,120,80))
 	end
 
-	-- ждем 1 сек чтобы команда успела выполниться (как ты просил)
 	task.wait(1)
 
-	-- телепорт обратно на Spawn.Base своей базы
 	local spawn = myBase:FindFirstChild("Spawn")
 	local spawnPos
 	if spawn then
-		-- Spawn иногда само BasePart, или содержит Base
-		if spawn:IsA("BasePart") then
-			spawnPos = spawn.Position
+		if spawn:IsA("BasePart") then spawnPos = spawn.Position
 		else
 			local basePart = spawn:FindFirstChild("Base")
 			if basePart and basePart:IsA("BasePart") then
@@ -292,37 +291,32 @@ local function stealAndReturn()
 	end
 
 	if spawnPos then
-		showNotify("🔁 Возврат на свою базу...", Color3.fromRGB(100,140,220))
+		showNotify("🔁 Возврат на базу...", Color3.fromRGB(100,140,220))
 		teleportCharacterToPosition(spawnPos + Vector3.new(0,3,0))
 		task.wait(0.25)
-		showNotify("🏠 Вы вернулись на базу!", Color3.fromRGB(80,200,120))
+		showNotify("🏠 Вы вернулись!", Color3.fromRGB(80,200,120))
 	else
-		showNotify("⚠️ Spawn не найден — возврат в тек. позицию", Color3.fromRGB(200,120,80))
-		-- если spawn не найден — просто не трогать или можно вернуть на hrp.Position
+		showNotify("⚠️ Spawn не найден", Color3.fromRGB(200,120,80))
 	end
 
-	-- восстановить движение
 	if humanoid and savedWalk then
 		humanoid.WalkSpeed = savedWalk.WalkSpeed or 16
 		humanoid.JumpPower = savedWalk.JumpPower or humanoid.JumpPower
 	end
 
+	::endRoutine::
 	stealBtn.Text = "🌀 Украсть и вернуться"
 	stealBtn.Active = true
 end
 
--- Подключаем кнопки
 stealBtn.MouseButton1Click:Connect(function()
-	-- защита: если нажатие слишком часто — блокируем
 	if not stealBtn.Active then return end
-	stealBtn.Active = false
 	task.spawn(function()
 		local ok, err = pcall(stealAndReturn)
 		if not ok then
 			warn("stealAndReturn error:", err)
 			showNotify("❌ Ошибка: "..tostring(err), Color3.fromRGB(220,80,80))
 		end
-		stealBtn.Active = true
 	end)
 end)
 
@@ -331,11 +325,10 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Mobile tweak
-local UserInputService = game:GetService("UserInputService")
 if UserInputService.TouchEnabled then
 	frame.Size = UDim2.new(0, 340, 0, 160)
 	stealBtn.Size = UDim2.new(1, -40, 0, 54)
 	closeBtn.Size = UDim2.new(1, -40, 0, 44)
 end
 
-print("✅ FemboyStealerUI loaded (LocalScript).")
+print("✅ FemboyStealerUI loaded with drag + mobile support.")
