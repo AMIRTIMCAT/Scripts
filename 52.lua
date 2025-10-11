@@ -1,6 +1,3 @@
--- LocalScript: Femboy Stealer UI (Fixed + Drag + Mobile Support)
--- ПОЛОЖИ В StarterPlayer > StarterPlayerScripts
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
