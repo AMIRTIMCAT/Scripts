@@ -8,9 +8,9 @@ local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
 local bases = Workspace:WaitForChild("Bases")
 
-local originalPosition = hrp.Position -- 🧭 запоминаем базу
+local originalPosition = hrp.Position -- 🧭 Точка возврата (твоя база)
 
--- 📢 короткое уведомление
+-- 📢 Уведомления на экране
 local function notify(text, color)
 	local gui = Instance.new("ScreenGui")
 	gui.ResetOnSpawn = false
@@ -32,34 +32,34 @@ local function notify(text, color)
 	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = label
 
-	TweenService:Create(label, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(label, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
 
-	task.delay(0.4, function()
-		TweenService:Create(label, TweenInfo.new(0.25), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
-		task.wait(0.25)
+	task.delay(0.8, function()
+		TweenService:Create(label, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
+		task.wait(0.3)
 		gui:Destroy()
 	end)
 end
 
--- 🚫 заморозить игрока
+-- ❄️ Заморозка игрока
 local function freezeCharacter()
 	humanoid.WalkSpeed = 0
 	humanoid.JumpPower = 0
 end
 
--- ✅ разморозить игрока
+-- 🔓 Разморозка
 local function unfreezeCharacter()
 	humanoid.WalkSpeed = 16
 	humanoid.JumpPower = 50
 end
 
--- 🚀 телепорт
+-- 🚀 Телепорт
 local function teleportTo(position)
 	humanoid:MoveTo(position)
 	hrp.CFrame = CFrame.new(position)
 end
 
--- 🔍 поиск промпта
+-- 🔍 Поиск ближайшего ProximityPrompt
 local function findNearestPrompt(originPos, maxDistance)
 	local closestPrompt, minDist = nil, maxDistance or 15
 	for _, obj in ipairs(Workspace:GetDescendants()) do
@@ -77,7 +77,7 @@ local function findNearestPrompt(originPos, maxDistance)
 	return closestPrompt
 end
 
--- ⚡ основной код
+-- ⚡ Основной цикл
 for _, base in ipairs(bases:GetChildren()) do
 	if base:IsA("Model") then
 		local slots = base:FindFirstChild("Slots")
@@ -93,27 +93,28 @@ for _, base in ipairs(bases:GetChildren()) do
 							pos = part and part.Position or Vector3.new(0, 0, 0)
 						end
 
-						-- ❄️ замораживаем движение
+						-- 🧊 Замораживаем движение
 						freezeCharacter()
-
-						-- ✨ телепорт к цели
 						notify("✨ Телепорт к цели...", Color3.fromRGB(0, 170, 255))
 						teleportTo(pos + Vector3.new(0, 3, 0))
 
-						task.wait(0.1)
+						-- ⏱️ Находим и используем ProximityPrompt через 1 секунду
+						task.wait(1)
 						local prompt = findNearestPrompt(pos, 18)
 						if prompt then
 							fireproximityprompt(prompt)
 							notify("💸 Украдено!", Color3.fromRGB(0, 200, 0))
+						else
+							warn("❌ Промпт не найден")
 						end
 
-						-- 🏠 возвращаемся на базу
-						task.wait(0.2)
-						notify("🏠 Возврат на базу!", Color3.fromRGB(255, 170, 0))
+						-- 🏠 Возврат на базу через 0.5 сек после кражи
+						task.wait(0.5)
+						notify("🏠 Возврат на базу...", Color3.fromRGB(255, 170, 0))
 						teleportTo(originalPosition + Vector3.new(0, 3, 0))
 
-						task.wait(0.1)
-						unfreezeCharacter() -- ✅ разморозить после возвращения
+						task.wait(0.2)
+						unfreezeCharacter()
 						return
 					end
 				end
