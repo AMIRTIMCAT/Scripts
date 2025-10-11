@@ -193,3 +193,4 @@ stealBtn.MouseButton1Click:Connect(stealAndReturn)
 closeBtn.MouseButton1Click:Connect(function()
 	gui:Destroy()
 end)
+
