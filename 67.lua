@@ -273,7 +273,6 @@ local function stealAndReturn()
     local char = player.Character
     if not char then
         showNotify("❌ Персонаж не найден!", Color3.fromRGB(200, 80, 80))
-        goto done
     end
     
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -281,25 +280,21 @@ local function stealAndReturn()
     
     if not hum or not hrp then
         showNotify("❌ Humanoid/HRP не найден!", Color3.fromRGB(200, 80, 80))
-        goto done
     end
 
     local myBase = findMyBase()
     if not myBase then
         showNotify("⚠️ Своя база не найдена!", Color3.fromRGB(200, 80, 80))
-        goto done
     end
 
     local targetModel, targetBase = findEnemyFemboy(myBase)
     if not targetModel then
         showNotify("❌ Femboy/Roommate не найден!", Color3.fromRGB(200, 80, 80))
-        goto done
     end
 
     local part = getAnyBasePart(targetModel)
     if not part then
         showNotify("⚠️ Не удалось найти часть цели", Color3.fromRGB(200, 80, 80))
-        goto done
     end
     
     local pos = part.Position + Vector3.new(0, 3, 0)
